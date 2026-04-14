@@ -1,0 +1,23 @@
+{
+  "name": "workspace",
+  "version": "1.0.0",
+  "description": "Linear webhook automation for research status title prefix",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "jest --runInBand"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stephaniedonnezan/test.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/stephaniedonnezan/test/issues"
+  },
+  "homepage": "https://github.com/stephaniedonnezan/test#readme",
+  "devDependencies": {
+    "jest": "^30.3.0"
+  }
+}
