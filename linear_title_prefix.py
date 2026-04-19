@@ -50,6 +50,10 @@ def derive_updated_title(payload: Mapping[str, Any]) -> str | None:
     """Derive the updated title from an automation payload."""
     trigger_context = _extract_trigger_context(payload)
 
+    trigger = trigger_context.get("trigger")
+    if isinstance(trigger, str) and trigger != "status_changed":
+        return None
+
     title = trigger_context.get("title")
     new_status = trigger_context.get("newStatus")
     if not isinstance(title, str) or not isinstance(new_status, str):

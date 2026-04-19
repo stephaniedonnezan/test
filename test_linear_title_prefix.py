@@ -76,6 +76,17 @@ class DeriveUpdatedTitleTests(unittest.TestCase):
             "Cursor researching: Issue title",
         )
 
+    def test_ignores_non_status_changed_triggers(self) -> None:
+        payload = {
+            "triggerContext": {
+                "trigger": "issue_created",
+                "newStatus": "to research",
+                "title": "Issue title",
+            }
+        }
+
+        self.assertIsNone(derive_updated_title(payload))
+
     def test_returns_none_when_no_update_needed(self) -> None:
         payload = {
             "triggerContext": {
