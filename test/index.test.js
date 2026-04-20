@@ -17,6 +17,7 @@ test("handleIssueStatusChanged returns update payload for to research", () => {
     action: "update_issue_title",
     issueId: "POI-4240",
     title: "Cursor researching: WP1: Audit Overview & Management",
+    previousTitle: "WP1: Audit Overview & Management",
   });
 });
 
