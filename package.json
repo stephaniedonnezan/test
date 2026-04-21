@@ -1,0 +1,9 @@
+{
+  "name": "linear-issue-title-automation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Automation helpers for Linear issue title updates",
+  "scripts": {
+    "test": "node --test"
+  }
+}
