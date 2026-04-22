@@ -23,10 +23,6 @@ export function buildResearchTitle(title) {
 }
 
 export function getUpdatedIssueTitle(triggerContext = {}) {
-  if (normalize(triggerContext.trigger) !== "status_changed") {
-    return null;
-  }
-
   if (normalize(triggerContext.newStatus) !== RESEARCH_STATUS) {
     return null;
   }
