@@ -22,12 +22,12 @@ def build_issue_title_update(event: Mapping[str, Any] | None) -> dict[str, str] 
     if _normalize(context.get("trigger")) != "status changed":
         return None
 
-    new_status = context.get("newStatus", context.get("status"))
+    new_status = context.get("newStatus") or context.get("status")
     if _normalize(new_status) != TARGET_STATUS:
         return None
 
     title = context.get("title")
-    issue_id = context.get("id", context.get("issueId"))
+    issue_id = context.get("id") or context.get("issueId")
     if not isinstance(title, str) or not title.strip():
         return None
     if not isinstance(issue_id, str) or not issue_id.strip():
