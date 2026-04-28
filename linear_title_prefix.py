@@ -9,7 +9,7 @@ from typing import Any
 
 TITLE_PREFIX = "Cursor researching"
 TARGET_STATUS = "to research"
-STATUS_CHANGED_TRIGGER = "status_changed"
+STATUS_CHANGED_TRIGGER = "status changed"
 
 
 def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
