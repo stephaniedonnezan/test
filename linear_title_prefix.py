@@ -28,10 +28,13 @@ def build_issue_title_update(event: dict[str, Any]) -> dict[str, str] | None:
 
     issue_id = _string_value(context.get("id")) or _string_value(context.get("issueId"))
     title = _string_value(context.get("title"))
-    if not issue_id or not title:
+    if not issue_id:
         return None
 
     title = title.strip()
+    if not title:
+        return None
+
     if _has_researching_prefix(title):
         return None
 
