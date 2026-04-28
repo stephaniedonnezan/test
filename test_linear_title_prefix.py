@@ -171,6 +171,18 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
                         "trigger": "status_changed",
                         "newStatus": "to research",
                         "id": "POI-4548",
+                        "title": "   ",
+                    }
+                }
+            )
+        )
+        self.assertIsNone(
+            build_issue_title_update(
+                {
+                    "triggerContext": {
+                        "trigger": "status_changed",
+                        "newStatus": "to research",
+                        "id": "POI-4548",
                     }
                 }
             )

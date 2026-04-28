@@ -23,12 +23,11 @@ def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
     if _normalize(status) != "to research":
         return None
 
-    issue_id = _string_value(context.get("id", context.get("issueId")))
-    title = _string_value(context.get("title"))
+    issue_id = _string_value(context.get("id", context.get("issueId"))).strip()
+    title = _string_value(context.get("title")).strip()
     if not issue_id or not title:
         return None
 
-    title = title.strip()
     if _has_prefix(title):
         return None
 
