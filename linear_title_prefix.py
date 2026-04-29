@@ -86,7 +86,8 @@ def _text(value: Any) -> str | None:
 def _normalize_token(value: Any) -> str | None:
     if not isinstance(value, str):
         return None
-    return re.sub(r"[-_\s]+", " ", value.strip()).lower()
+    spaced = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", value.strip())
+    return re.sub(r"[-_\s]+", " ", spaced).lower()
 
 
 def _has_prefix(title: str) -> bool:
