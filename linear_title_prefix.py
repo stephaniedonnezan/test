@@ -21,7 +21,7 @@ def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
     if _normalize(payload.get("newStatus") or payload.get("new_status") or _state_name(payload) or payload.get("status")) != "toresearch":
         return None
 
-    issue_id = _first_text(payload, "id", "issueId", "issue_id", "identifier")
+    issue_id = _first_text(payload, "issueId", "issue_id", "id", "identifier")
     title = _first_text(payload, "title")
     if not issue_id or not title:
         return None
