@@ -76,6 +76,26 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_prefers_explicit_new_status_over_generic_status(self):
+        event = {
+            "newStatus": "To Research",
+            "triggerContext": {
+                "trigger": "status_changed",
+                "status": "Triage",
+                "id": "POI-4234",
+                "title": "Link Issues/Alerts to actions",
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4234",
+                "title": "Cursor researching: Link Issues/Alerts to actions",
+            },
+        )
+
     def test_accepts_nested_linear_issue_payload(self):
         event = {
             "action": "Issue Updated",

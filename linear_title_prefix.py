@@ -23,9 +23,13 @@ def build_issue_title_update(event):
     if not _is_status_change(contexts):
         return None
 
-    new_status = _first_value(contexts, ("newStatus", "new_status", "status"))
+    new_status = _first_value_by_key_priority(
+        contexts, ("newStatus", "new_status", "toStatus", "to_status", "status")
+    )
     if new_status is None:
-        new_status = _nested_first_value(contexts, (("state", "name"), ("state", "title")))
+        new_status = _nested_first_value(
+            contexts, (("state", "name"), ("state", "title"))
+        )
 
     if _normalize_words(new_status) != TARGET_STATUS:
         return None
@@ -98,7 +102,10 @@ def _is_status_change(contexts):
     ):
         return True
 
-    if any(value in {"issueupdated", "updated", "update"} for value in normalized_triggers):
+    if any(
+        value in {"issueupdated", "updated", "update"}
+        for value in normalized_triggers
+    ):
         updated_fields = _first_value(contexts, ("updatedFields", "updated_fields"))
         return _contains_status_field(updated_fields)
 
@@ -124,6 +131,18 @@ def _first_value(contexts, keys):
             continue
         for key in keys:
             if key in context and context[key] is not None:
+                return context[key]
+    return None
+
+
+def _first_value_by_key_priority(contexts, keys):
+    for key in keys:
+        for context in contexts:
+            if (
+                isinstance(context, Mapping)
+                and key in context
+                and context[key] is not None
+            ):
                 return context[key]
     return None
 
