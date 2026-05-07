@@ -76,7 +76,7 @@ def _sources(event: Mapping[str, Any]) -> Iterable[Mapping[str, Any]]:
 
 
 def _is_status_change(sources: list[Mapping[str, Any]]) -> bool:
-    trigger_values = _values(sources, ("trigger", "action", "type", "event"))
+    trigger_values = list(_values(sources, ("trigger", "action", "type", "event", "webhookType")))
     if any(_normalized_token(value) in _STATUS_CHANGE_TOKENS for value in trigger_values):
         return True
 
