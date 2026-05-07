@@ -97,7 +97,7 @@ def _normalize_status(value: Any) -> str | None:
 
 
 def _normalize_token(value: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "", value).lower()
+    return re.sub(r"[^A-Za-z0-9]+", "", value).lower()
 
 
 def _has_research_prefix(title: str) -> bool:
