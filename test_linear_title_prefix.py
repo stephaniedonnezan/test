@@ -105,6 +105,17 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
 
         self.assertIsNone(build_issue_title_update(event))
 
+    def test_ignores_updated_fields_on_unrelated_trigger(self):
+        event = {
+            "trigger": "comment_created",
+            "updatedFields": ["status"],
+            "newStatus": "to research",
+            "id": "POI-130",
+            "title": "Assess comment update",
+        }
+
+        self.assertIsNone(build_issue_title_update(event))
+
     def test_ignores_already_prefixed_titles(self):
         event = {
             "trigger": "status_changed",

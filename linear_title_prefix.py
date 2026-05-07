@@ -6,7 +6,7 @@ import json
 import re
 import sys
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, Iterator
 
 
 PREFIX = "Cursor researching"
@@ -106,6 +106,9 @@ def _is_status_change(locations: list[Mapping[str, Any]]) -> bool:
     if any(value in {"issue updated", "issue update", "updated"} for value in trigger_values):
         return _updated_fields_include_status(locations)
 
+    if trigger_values:
+        return False
+
     return _updated_fields_include_status(locations)
 
 
@@ -136,7 +139,7 @@ def _first_field(locations: list[Mapping[str, Any]], *field_names: str) -> Any:
     return next(_field_values(locations, *field_names), None)
 
 
-def _field_values(locations: list[Mapping[str, Any]], *field_names: str) -> Any:
+def _field_values(locations: list[Mapping[str, Any]], *field_names: str) -> Iterator[Any]:
     for location in locations:
         for field_name in field_names:
             value = location.get(field_name)
