@@ -26,8 +26,12 @@ def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
     if not _is_status_changed(event, context, payload):
         return None
 
-    if _normalize_text(_first_text((context, payload), "newStatus", "new_status", "status")) != RESEARCH_STATUS:
-        state = _first_mapping((context, payload), "state")
+    status_sources = (context, payload, event)
+    if (
+        _normalize_text(_first_text(status_sources, "newStatus", "new_status", "status"))
+        != RESEARCH_STATUS
+    ):
+        state = _first_mapping(status_sources, "state")
         if _normalize_text(_mapping_text(state, "name")) != RESEARCH_STATUS:
             return None
 
