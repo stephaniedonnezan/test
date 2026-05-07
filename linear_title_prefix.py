@@ -72,13 +72,17 @@ def _issue_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _is_status_change(payload: Mapping[str, Any]) -> bool:
-    trigger = _normalize_label(
-        _first_present(payload, "trigger", "webhookType", "action", "type")
-    )
-    if trigger in {"status changed", "statuschanged", "issue status changed"}:
+    triggers = [
+        _normalize_label(payload.get(key))
+        for key in ("trigger", "webhookType", "action", "type")
+    ]
+    if any(
+        trigger in {"status changed", "statuschanged", "issue status changed"}
+        for trigger in triggers
+    ):
         return True
 
-    if trigger == "issue updated":
+    if "issue updated" in triggers:
         updated_fields = payload.get("updatedFields") or payload.get("updated_fields")
         if isinstance(updated_fields, list):
             return any(_normalize_label(field) in {"status", "state"} for field in updated_fields)

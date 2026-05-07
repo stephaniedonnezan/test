@@ -58,6 +58,20 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             "Cursor researching: Research a biomethane parser",
         )
 
+    def test_accepts_action_status_changed_when_webhook_type_is_issue(self):
+        event = {
+            "webhookType": "issue",
+            "action": "statusChanged",
+            "newStatus": "to research",
+            "issueId": "POI-125",
+            "title": "Investigate carbon KPI",
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event)["title"],
+            "Cursor researching: Investigate carbon KPI",
+        )
+
     def test_skips_non_status_change_trigger(self):
         event = {
             "triggerContext": {
