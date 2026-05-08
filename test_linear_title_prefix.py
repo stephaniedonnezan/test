@@ -60,6 +60,26 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_reads_raw_linear_update_with_updated_from_state_id(self):
+        event = {
+            "action": "update",
+            "updatedFrom": {"stateId": "previous-state-id"},
+            "data": {
+                "id": "linear-issue-id",
+                "title": "Webhook state id update",
+                "state": {"name": "To Research"},
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "linear-issue-id",
+                "title": "Cursor researching: Webhook state id update",
+            },
+        )
+
     def test_ignores_status_changes_to_other_statuses(self):
         event = {
             "triggerContext": {

@@ -105,7 +105,14 @@ def _is_status_change_event(issue: Mapping[str, Any]) -> bool:
     if any(_normalise_text(issue.get(name)) in status_change_names for name in trigger_names):
         return True
 
-    update_names = {"issue updated", "updated issue", "update issue", "issue update"}
+    update_names = {
+        "update",
+        "updated",
+        "issue updated",
+        "updated issue",
+        "update issue",
+        "issue update",
+    }
     has_issue_update_name = any(
         _normalise_text(issue.get(name)) in update_names for name in trigger_names
     )
@@ -121,9 +128,13 @@ def _updated_fields_include_status(issue: Mapping[str, Any]) -> bool:
     elif isinstance(updated_fields, (list, tuple, set)):
         fields = updated_fields
     else:
-        return False
+        updated_from = issue.get("updatedFrom", issue.get("updated_from"))
+        if not isinstance(updated_from, Mapping):
+            return False
+        fields = updated_from.keys()
 
-    return any(_normalise_text(field) in {"status", "state"} for field in fields)
+    status_fields = {"status", "status id", "state", "state id", "workflow state"}
+    return any(_normalise_text(field) in status_fields for field in fields)
 
 
 def _new_status(issue: Mapping[str, Any]) -> Any:
