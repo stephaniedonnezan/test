@@ -123,7 +123,7 @@ def _normalize_text(value: str | None) -> str:
     if not isinstance(value, str):
         return ""
 
-    spaced = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", value)
+    spaced = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", value)
     normalized = re.sub(r"[^a-z0-9]+", " ", spaced.lower())
     return " ".join(normalized.split())
 
