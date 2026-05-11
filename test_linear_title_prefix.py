@@ -107,6 +107,19 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
 
         self.assertEqual(result["title"], "Cursor researching: Update title")
 
+    def test_specific_action_is_used_when_webhook_type_is_generic(self):
+        result = build_issue_title_update(
+            {
+                "webhookType": "issue",
+                "action": "statusChanged",
+                "status": "to research",
+                "id": "POI-3763",
+                "title": "Update title",
+            }
+        )
+
+        self.assertEqual(result["title"], "Cursor researching: Update title")
+
     def test_ignores_issue_updated_payload_without_status_field_change(self):
         result = build_issue_title_update(
             {

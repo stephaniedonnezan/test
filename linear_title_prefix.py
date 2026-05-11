@@ -83,20 +83,21 @@ def _event_context(event: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _is_status_change_event(context: Mapping[str, Any]) -> bool:
-    trigger_value = _first_text(context, "trigger", "webhookType", "action", "type")
-    if trigger_value is None:
-        return False
-
-    normalized_trigger = _normalize_label(trigger_value)
-    if normalized_trigger in {
+    normalized_triggers = {
+        normalized
+        for key in ("trigger", "webhookType", "action", "type")
+        if (normalized := _normalize_label(context.get(key))) is not None
+    }
+    status_change_triggers = {
         "status changed",
         "status change",
         "state changed",
         "workflow state changed",
-    }:
+    }
+    if normalized_triggers.intersection(status_change_triggers):
         return True
 
-    if normalized_trigger in {"issue updated", "updated issue"}:
+    if normalized_triggers.intersection({"issue updated", "updated issue"}):
         return _updated_fields_include_status(context.get("updatedFields"))
 
     return False
