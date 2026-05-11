@@ -80,12 +80,17 @@ def _candidate_mappings(event: Mapping[str, Any]) -> list[Mapping[str, Any]]:
 
 
 def _is_status_change_event(candidates: Iterable[Mapping[str, Any]]) -> bool:
-    trigger_value = _extract_first_string(candidates, ("trigger", "action", "type", "webhookType"))
-    normalized_trigger = _normalize_label(trigger_value)
-    if normalized_trigger in {"status changed", "status change", "state changed", "workflow state changed"}:
-        return True
+    saw_issue_update = False
 
-    if normalized_trigger in {"issue updated", "updated issue", "update", "updated"}:
+    for candidate in candidates:
+        for key in ("trigger", "action", "type", "webhookType"):
+            normalized_trigger = _normalize_label(candidate.get(key))
+            if normalized_trigger in {"status changed", "status change", "state changed", "workflow state changed"}:
+                return True
+            if normalized_trigger in {"issue updated", "updated issue", "update", "updated"}:
+                saw_issue_update = True
+
+    if saw_issue_update:
         return _updated_fields_include_status(candidates)
 
     return False
@@ -112,7 +117,7 @@ def _field_name_indicates_status(field: Any) -> bool:
 def _extract_status(candidates: Iterable[Mapping[str, Any]]) -> str | None:
     direct_status = _extract_first_string(
         candidates,
-        ("newStatus", "new_status", "status", "statusName", "stateName", "workflowStateName"),
+        ("newStatus", "new_status", "statusName", "stateName", "workflowStateName"),
     )
     if direct_status:
         return direct_status
@@ -124,6 +129,11 @@ def _extract_status(candidates: Iterable[Mapping[str, Any]]) -> str | None:
                 nested_name = _extract_first_string((value,), ("name", "title", "label"))
                 if nested_name:
                     return nested_name
+
+    direct_status = _extract_first_string(candidates, ("status",))
+    if direct_status:
+        return direct_status
+
     return None
 
 

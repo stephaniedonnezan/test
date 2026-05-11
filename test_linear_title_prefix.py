@@ -122,6 +122,41 @@ class LinearTitlePrefixTest(unittest.TestCase):
             },
         )
 
+    def test_scans_outer_action_when_nested_data_has_type(self):
+        event = {
+            "action": "update",
+            "updatedFields": ["state"],
+            "data": {
+                "type": "Issue",
+                "id": "issue-uuid",
+                "title": "confirm modifications on POS",
+                "state": {"name": "To Research"},
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event)["title"],
+            "Cursor researching: confirm modifications on POS",
+        )
+
+    def test_explicit_new_status_wins_over_nested_status(self):
+        event = {
+            "triggerContext": {
+                "trigger": "status_changed",
+                "newStatus": "To Research",
+                "data": {
+                    "id": "POI-3309",
+                    "title": "confirm modifications on POS",
+                    "status": "Backlog",
+                },
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event)["title"],
+            "Cursor researching: confirm modifications on POS",
+        )
+
     def test_alias_matches_primary_handler(self):
         event = {
             "trigger": "status_changed",
