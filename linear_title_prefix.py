@@ -77,7 +77,7 @@ def _event_contexts(event: Mapping[str, Any]) -> list[Mapping[str, Any]]:
 
 def _is_status_change(contexts: Iterable[Mapping[str, Any]]) -> bool:
     for context in contexts:
-        for key in ("trigger", "action", "type", "eventType"):
+        for key in ("trigger", "action", "type", "eventType", "webhookType"):
             if _is_status_change_marker(context.get(key)):
                 return True
 
@@ -93,7 +93,7 @@ def _is_status_change_marker(value: Any) -> bool:
 
 
 def _is_issue_updated_marker(context: Mapping[str, Any]) -> bool:
-    for key in ("trigger", "action", "type", "eventType"):
+    for key in ("trigger", "action", "type", "eventType", "webhookType"):
         normalized = _normalize_words(context.get(key))
         if normalized in {"issue updated", "updated issue", "issue update", "update issue"}:
             return True
@@ -127,7 +127,7 @@ def _updated_fields_include_status(context: Mapping[str, Any]) -> bool:
 
 
 def _status_value(contexts: Iterable[Mapping[str, Any]]) -> Any:
-    for key in ("newStatus", "new_status", "status", "stateName", "state_name"):
+    for key in ("newStatus", "new_status", "stateName", "state_name"):
         value = _first_value(contexts, (key,))
         if value is not None:
             return value
@@ -139,6 +139,10 @@ def _status_value(contexts: Iterable[Mapping[str, Any]]) -> Any:
                 value = nested.get("name")
                 if value is not None:
                     return value
+
+    value = _first_value(contexts, ("status",))
+    if value is not None:
+        return value
 
     return None
 

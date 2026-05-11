@@ -79,6 +79,45 @@ class LinearTitlePrefixTest(unittest.TestCase):
             },
         )
 
+    def test_accepts_status_changed_webhook_type_marker(self):
+        event = {
+            "webhookType": "status_changed",
+            "newStatus": "to research",
+            "issueId": "POI-3655",
+            "title": "Webhook type marker",
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-3655",
+                "title": "Cursor researching: Webhook type marker",
+            },
+        )
+
+    def test_prefers_nested_state_over_generic_status(self):
+        event = {
+            "action": "statusChanged",
+            "status": "triage",
+            "data": {
+                "issue": {
+                    "id": "linear-issue-id",
+                    "title": "Nested state wins",
+                    "state": {"name": "To Research"},
+                }
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "linear-issue-id",
+                "title": "Cursor researching: Nested state wins",
+            },
+        )
+
     def test_supports_issue_updated_when_status_field_changed(self):
         event = {
             "type": "Issue Updated",
