@@ -61,7 +61,7 @@ def build_issue_title_update(event: Mapping[str, Any] | None) -> dict[str, str] 
     issue_title = _first_text(context_maps, ("title", "name"))
     issue_id = _first_text(
         context_maps,
-        ("issueId", "issue_id", "identifier", "id"),
+        ("issueId", "issue_id", "id", "identifier"),
         reverse=True,
     )
     if not issue_title or not issue_id:
