@@ -203,6 +203,8 @@ def _first_text(
 
 
 def _has_prefix(title: str, prefix: str = RESEARCH_TITLE_PREFIX) -> bool:
+    if prefix == RESEARCH_TITLE_PREFIX:
+        return _PREFIX_PATTERN.match(title) is not None
     return re.match(rf"^\s*{re.escape(prefix)}(?:\b|$)", title, re.IGNORECASE) is not None
 
 
