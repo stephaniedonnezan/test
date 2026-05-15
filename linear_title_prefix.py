@@ -35,24 +35,7 @@ def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
     if not _is_status_change_event(contexts):
         return None
 
-    status = _first_string(
-        _lookup_path(context, path)
-        for context in contexts
-        for path in (
-            ("newStatus",),
-            ("new_status",),
-            ("newState",),
-            ("new_state",),
-            ("status", "name"),
-            ("state", "name"),
-            ("workflowState", "name"),
-            ("workflow_state", "name"),
-            ("status",),
-            ("state",),
-            ("workflowState",),
-            ("workflow_state",),
-        )
-    )
+    status = _issue_status(contexts)
     if _normalize_text(status) != RESEARCH_STATUS:
         return None
 
@@ -129,6 +112,26 @@ def _is_status_change_event(contexts: Sequence[Mapping[str, Any]]) -> bool:
         return _updated_fields_include_status(contexts)
 
     return False
+
+
+def _issue_status(contexts: Sequence[Mapping[str, Any]]) -> str | None:
+    for paths in (
+        (("newStatus",), ("new_status",), ("newState",), ("new_state",)),
+        (
+            ("status", "name"),
+            ("state", "name"),
+            ("workflowState", "name"),
+            ("workflow_state", "name"),
+        ),
+        (("status",), ("state",), ("workflowState",), ("workflow_state",)),
+    ):
+        status = _first_string(
+            _lookup_path(context, path) for context in contexts for path in paths
+        )
+        if status:
+            return status
+
+    return None
 
 
 def _updated_fields_include_status(contexts: Sequence[Mapping[str, Any]]) -> bool:

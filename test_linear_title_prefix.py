@@ -95,6 +95,26 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
 
         self.assertIsNone(build_issue_title_update(event))
 
+    def test_new_status_takes_precedence_over_stale_status_fields(self):
+        event = {
+            "triggerContext": {
+                "trigger": "status_changed",
+                "status": "Todo",
+            },
+            "newStatus": "to research",
+            "id": "POI-4691",
+            "title": "Deprecate frontend v1",
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4691",
+                "title": "Cursor researching: Deprecate frontend v1",
+            },
+        )
+
     def test_ignores_already_prefixed_titles_case_insensitively(self):
         event = {
             "trigger": "statusChanged",
