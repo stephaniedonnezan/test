@@ -69,10 +69,10 @@ def _flatten_event(event: Mapping[str, Any]) -> dict[str, Any]:
         if isinstance(value, Mapping):
             result.update(value)
 
-    for key in ("issue", "data", "node"):
+    for key in ("issue", "data", "node", "payload"):
         nested = event.get(key)
         if isinstance(nested, Mapping):
-            for issue_key in ("issue", "data", "node"):
+            for issue_key in ("issue", "data", "node", "payload"):
                 merge_mapping(nested.get(issue_key))
             merge_mapping(nested)
 
@@ -85,6 +85,7 @@ def _is_status_change_event(payload: Mapping[str, Any]) -> bool:
     event_markers = [
         payload.get("trigger"),
         payload.get("webhookType"),
+        payload.get("webhook_type"),
         payload.get("action"),
         payload.get("type"),
     ]
@@ -103,7 +104,7 @@ def _is_status_change_event(payload: Mapping[str, Any]) -> bool:
 
 
 def _extract_new_status(payload: Mapping[str, Any]) -> str | None:
-    for key in ("newStatus", "new_status", "toStatus", "to_status"):
+    for key in ("newStatus", "new_status", "newState", "new_state", "toStatus", "to_status"):
         value = _string_or_name(payload.get(key))
         if value:
             return value

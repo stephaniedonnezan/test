@@ -65,6 +65,25 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_accepts_payload_container_and_webhook_type_alias(self):
+        event = {
+            "webhook_type": "status_changed",
+            "newState": {"name": "to-research"},
+            "payload": {
+                "id": "POI-2468",
+                "title": "Payload container",
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-2468",
+                "title": "Cursor researching: Payload container",
+            },
+        )
+
     def test_accepts_camel_case_trigger_and_status(self):
         event = {
             "trigger": "statusChanged",
