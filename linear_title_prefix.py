@@ -11,7 +11,7 @@ from typing import Any
 
 TITLE_PREFIX = "Cursor researching"
 TARGET_STATUS = "to research"
-STATUS_CHANGE_FIELDS = {"status", "state", "workflowstate", "workflow_status"}
+STATUS_CHANGE_FIELDS = {"status", "state", "workflowstate", "workflowstatus"}
 TRIGGER_FIELDS = ("trigger", "webhookType", "action", "type")
 EXPLICIT_STATUS_FIELDS = ("newStatus", "new_status", "newState", "new_state")
 

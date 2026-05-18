@@ -65,6 +65,26 @@ class LinearTitlePrefixTest(unittest.TestCase):
             },
         )
 
+    def test_workflow_status_field_name_is_supported(self):
+        event = {
+            "action": "Issue Updated",
+            "updated_fields": ["workflow_status"],
+            "data": {
+                "issue_id": "POI-4702",
+                "title": "Detailed Documentation of container events",
+                "workflow_state": {"name": "to-research"},
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4702",
+                "title": "Cursor researching: Detailed Documentation of container events",
+            },
+        )
+
     def test_explicit_new_status_wins_over_stale_nested_status(self):
         event = {
             "triggerContext": {
