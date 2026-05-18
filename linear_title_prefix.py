@@ -71,7 +71,8 @@ def _dedupe_contexts(contexts: Iterable[Mapping[str, Any]]) -> list[Mapping[str,
 
 
 def _is_status_change_event(contexts: Iterable[Mapping[str, Any]]) -> bool:
-    updated_fields_present = False
+    saw_generic_issue_update = False
+    saw_status_field_update = False
 
     for context in contexts:
         for field in TRIGGER_FIELDS:
@@ -79,14 +80,14 @@ def _is_status_change_event(contexts: Iterable[Mapping[str, Any]]) -> bool:
             if trigger in {"statuschanged", "statuschange", "statusupdated", "statusupdate"}:
                 return True
             if trigger in {"issueupdated", "updatedissue", "update", "updated"}:
-                updated_fields_present = True
+                saw_generic_issue_update = True
 
         updated_fields = context.get("updatedFields") or context.get("updated_fields")
         changed_fields = context.get("changedFields") or context.get("changed_fields")
         if _contains_status_field(updated_fields) or _contains_status_field(changed_fields):
-            updated_fields_present = True
+            saw_status_field_update = True
 
-    return updated_fields_present
+    return saw_generic_issue_update and saw_status_field_update
 
 
 def _contains_status_field(value: Any) -> bool:
