@@ -67,7 +67,7 @@ def _is_status_change(event: Mapping[str, Any]) -> bool:
     issue_update = any(
         value in {"update", "updated", "issue updated", "updated issue"} for value in event_values
     ) and (
-        any(value == "issue" or value.endswith(" issue") for value in event_values)
+        any(value == "issue" or "issue" in value for value in event_values)
         or _mapping_at(event, "issue") is not None
         or _mapping_at(_mapping_at(event, "data"), "issue") is not None
     )
