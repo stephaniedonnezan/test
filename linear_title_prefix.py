@@ -191,10 +191,8 @@ def _normalize_token(value: Any) -> str:
 
 
 def _normalize_field_name(value: Any) -> str:
-    return re.sub(r"[^a-z0-9_]+", "", _camel_to_words(str(value or "")).lower()).replace(
-        " ",
-        "_",
-    )
+    text = _camel_to_words(str(value or "")).lower()
+    return re.sub(r"_+", "_", re.sub(r"[^a-z0-9]+", "_", text)).strip("_")
 
 
 def _camel_to_words(value: str) -> str:
