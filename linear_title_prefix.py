@@ -56,7 +56,7 @@ def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
     if _normalize_words(new_status) != TARGET_STATUS:
         return None
 
-    issue_id = _first_text(contexts, _ISSUE_ID_KEYS)
+    issue_id = _issue_id(contexts)
     title = _first_text(contexts, _TITLE_KEYS)
     if not issue_id or not title:
         return None
@@ -116,6 +116,18 @@ def _has_status_change_trigger(contexts: Iterable[Mapping[str, Any]]) -> bool:
                 "workflow state change",
             }:
                 return True
+            if any(
+                phrase in normalized
+                for phrase in (
+                    "status changed",
+                    "status change",
+                    "state changed",
+                    "state change",
+                    "workflow state changed",
+                    "workflow state change",
+                )
+            ):
+                return True
     return False
 
 
@@ -173,6 +185,20 @@ def _new_status(contexts: Iterable[Mapping[str, Any]]) -> str | None:
                 return value
 
     return None
+
+
+def _issue_id(contexts: Iterable[Mapping[str, Any]]) -> str | None:
+    context_list = list(contexts)
+    explicit = _first_text(context_list, _ISSUE_ID_KEYS[:-1])
+    if explicit:
+        return explicit
+
+    issue_like_contexts = [context for context in context_list if _first_text([context], _TITLE_KEYS)]
+    issue_id = _first_text(issue_like_contexts, ("id",))
+    if issue_id:
+        return issue_id
+
+    return _first_text(context_list, ("id",))
 
 
 def _first_text(contexts: Iterable[Mapping[str, Any]], keys: Iterable[str]) -> str | None:

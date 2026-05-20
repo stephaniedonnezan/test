@@ -122,6 +122,27 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
 
         self.assertIsNone(build_issue_title_update(event))
 
+    def test_prefers_nested_issue_id_over_webhook_id(self):
+        event = {
+            "id": "webhook-event-id",
+            "action": "Issue Updated",
+            "updatedFrom": {"stateId": "old-state"},
+            "data": {
+                "id": "POI-10",
+                "title": "Nested issue id",
+                "state": {"name": "To Research"},
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-10",
+                "title": "Cursor researching: Nested issue id",
+            },
+        )
+
     def test_uses_identifier_and_trims_title(self):
         event = {
             "triggerContext": {
