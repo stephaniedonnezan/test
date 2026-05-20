@@ -90,7 +90,7 @@ def _append_mapping(contexts: list[Mapping[str, Any]], value: Any) -> None:
 
 
 def _is_status_changed_event(contexts: Sequence[Mapping[str, Any]]) -> bool:
-    trigger_values = _trigger_values(contexts)
+    trigger_values = list(_trigger_values(contexts))
     if any(_is_status_changed_value(value) for value in trigger_values):
         return True
 
