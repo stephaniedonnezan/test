@@ -36,6 +36,7 @@ _ISSUE_ID_KEYS = ("issueId", "issue_id", "id", "identifier")
 _TITLE_KEYS = ("title", "issueTitle", "issue_title")
 _TRIGGER_KEYS = ("trigger", "webhookType", "webhook_type")
 _ISSUE_UPDATE_KEYS = ("action", "type", "webhookType", "webhook_type", "trigger")
+_OLD_VALUE_CONTAINERS = {"updatedFrom", "updated_from"}
 
 
 def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
@@ -148,7 +149,7 @@ def _extract_new_status(event: Mapping[str, Any]) -> str | None:
 
 
 def _extract_status_text(event: Mapping[str, Any], key: str) -> str | None:
-    for value in _values_for_key(event, key):
+    for value in _values_for_key(event, key, skip_keys=_OLD_VALUE_CONTAINERS):
         if isinstance(value, str) and value.strip():
             return value
 
@@ -169,15 +170,17 @@ def _extract_text(event: Mapping[str, Any], keys: tuple[str, ...]) -> str | None
     return None
 
 
-def _values_for_key(value: Any, wanted_key: str) -> Iterable[Any]:
+def _values_for_key(value: Any, wanted_key: str, skip_keys: set[str] | None = None) -> Iterable[Any]:
     if isinstance(value, Mapping):
         for key, item in value.items():
             if key == wanted_key:
                 yield item
-            yield from _values_for_key(item, wanted_key)
+            if skip_keys and key in skip_keys:
+                continue
+            yield from _values_for_key(item, wanted_key, skip_keys=skip_keys)
     elif isinstance(value, list):
         for item in value:
-            yield from _values_for_key(item, wanted_key)
+            yield from _values_for_key(item, wanted_key, skip_keys=skip_keys)
 
 
 def _normalize_phrase(value: Any) -> str:
