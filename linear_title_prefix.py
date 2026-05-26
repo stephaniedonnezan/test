@@ -50,6 +50,12 @@ def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
     }
 
 
+def handle_issue_status_changed(event: Mapping[str, Any]) -> dict[str, str] | None:
+    """Compatibility alias for callers that name the handler after the trigger."""
+
+    return build_issue_title_update(event)
+
+
 def _flatten_event(event: Mapping[str, Any]) -> dict[str, Any]:
     flattened: dict[str, Any] = {}
 
@@ -81,14 +87,19 @@ def _is_status_change(flattened: Mapping[str, Any]) -> bool:
     if trigger_values & {
         "statuschanged",
         "statuschange",
-        "statuschanged",
         "statuschangedissue",
         "statusupdated",
+        "statechanged",
+        "statechange",
+        "stateupdated",
+        "workflowstatechanged",
+        "workflowstatechange",
+        "workflowstateupdated",
     }:
         return True
 
     if trigger_values & {"update", "updated", "issueupdated", "updatedissue"}:
-        return _updated_fields_include_status(flattened.get("updatedFields"))
+        return _has_status_field_change(flattened)
 
     return False
 
@@ -99,6 +110,10 @@ def _extract_new_status(flattened: Mapping[str, Any]) -> str | None:
         (
             "newStatus",
             "new_status",
+            "newState",
+            "new_state",
+            "newWorkflowState",
+            "new_workflow_state",
             "statusName",
             "stateName",
             "workflowStateName",
@@ -117,6 +132,13 @@ def _extract_new_status(flattened: Mapping[str, Any]) -> str | None:
             return value
 
     return None
+
+
+def _has_status_field_change(flattened: Mapping[str, Any]) -> bool:
+    for key in ("updatedFields", "changedFields", "changes", "updatedFrom"):
+        if _updated_fields_include_status(flattened.get(key)):
+            return True
+    return False
 
 
 def _updated_fields_include_status(updated_fields: Any) -> bool:
