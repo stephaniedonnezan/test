@@ -3,7 +3,7 @@ import subprocess
 import sys
 import unittest
 
-from linear_title_prefix import build_issue_title_update
+from linear_title_prefix import build_issue_title_update, handle_issue_status_changed
 
 
 class BuildIssueTitleUpdateTest(unittest.TestCase):
@@ -88,6 +88,37 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
                 "issueId": "POI-4660",
                 "title": "Cursor researching: Site switch on the site name",
             },
+        )
+
+    def test_accepts_changed_fields_and_new_state_payload(self):
+        event = {
+            "action": "Issue Updated",
+            "changedFields": {"workflowState": {"old": "Todo"}},
+            "newWorkflowState": "toResearch",
+            "data": {
+                "issue": {
+                    "id": "POI-4660",
+                    "title": "Site switch on the site name",
+                }
+            },
+        }
+
+        self.assertEqual(
+            handle_issue_status_changed(event)["title"],
+            "Cursor researching: Site switch on the site name",
+        )
+
+    def test_accepts_state_changed_trigger(self):
+        event = {
+            "trigger": "state_changed",
+            "state": {"name": "to research"},
+            "identifier": "POI-4660",
+            "title": "Site switch on the site name",
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event)["issueId"],
+            "POI-4660",
         )
 
     def test_ignores_linear_update_payload_without_status_field_change(self):
