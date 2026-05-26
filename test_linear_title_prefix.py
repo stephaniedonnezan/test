@@ -108,7 +108,7 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
 
     def test_supports_issue_object_inside_data(self):
         event = {
-            "action": "Issue Updated",
+            "type": "Issue Updated",
             "updatedFrom": {"workflowStateId": "old-state-id"},
             "data": {
                 "issue": {

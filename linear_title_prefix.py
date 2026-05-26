@@ -112,7 +112,8 @@ def _is_status_change_event(contexts: Iterable[Mapping[str, Any]]) -> bool:
         signal = _normalize_words(context.get("action"))
         trigger = _normalize_words(context.get("trigger"))
         event_type = _normalize_words(context.get("eventType"))
-        if {signal, trigger, event_type} & UPDATE_SIGNALS:
+        payload_type = _normalize_words(context.get("type"))
+        if {signal, trigger, event_type, payload_type} & UPDATE_SIGNALS:
             return _has_status_field_change(context_list)
 
     return False
