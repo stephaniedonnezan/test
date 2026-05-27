@@ -65,6 +65,32 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_accepts_linear_changes_payload_for_status_update(self):
+        event = {
+            "action": "Issue Updated",
+            "changes": {
+                "state": {
+                    "from": {"name": "Backlog"},
+                    "to": {"name": "To Research"},
+                },
+            },
+            "data": {
+                "issue": {
+                    "id": "issue-with-changes",
+                    "title": "Evaluate WRT orchestration",
+                },
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "issue-with-changes",
+                "title": "Cursor researching: Evaluate WRT orchestration",
+            },
+        )
+
     def test_ignores_other_statuses(self):
         event = {
             "trigger": "status_changed",

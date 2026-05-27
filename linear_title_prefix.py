@@ -81,7 +81,31 @@ def _updated_field_names(event: Mapping[str, Any]) -> set[str]:
         for key in ("updatedFields", "updated_fields", "changedFields", "changed_fields"):
             value = context.get(key)
             fields.update(_field_names(value))
+        if "changes" in context:
+            fields.update(_change_field_names(context["changes"]))
     return fields
+
+
+def _change_field_names(value: Any) -> set[str]:
+    if isinstance(value, Mapping):
+        return {_normalize_field_name(key) for key in value.keys()}
+
+    if isinstance(value, str):
+        return {_normalize_field_name(value)}
+
+    if isinstance(value, Iterable):
+        names: set[str] = set()
+        for item in value:
+            if isinstance(item, Mapping):
+                for key in ("name", "field", "key"):
+                    item_value = item.get(key)
+                    if isinstance(item_value, str):
+                        names.add(_normalize_field_name(item_value))
+            elif isinstance(item, str):
+                names.add(_normalize_field_name(item))
+        return names
+
+    return set()
 
 
 def _field_names(value: Any) -> set[str]:
@@ -112,12 +136,56 @@ def _find_status(event: Mapping[str, Any]) -> Any:
         if value is not None:
             return value
 
+    value = _find_changed_status(event)
+    if value is not None:
+        return value
+
     for key in ("status", "state", "workflowState", "workflow_status"):
         value = _find_value(event, (key,))
         if value is not None:
             return value
 
     return None
+
+
+def _find_changed_status(event: Mapping[str, Any]) -> Any:
+    for context in _contexts(event):
+        value = _status_from_changes(context.get("changes"))
+        if value is not None:
+            return value
+    return None
+
+
+def _status_from_changes(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        for key, change in value.items():
+            if _normalize_field_name(str(key)) in _STATUS_FIELD_NAMES:
+                return _new_value_from_change(change)
+
+    if isinstance(value, str):
+        return None
+
+    if isinstance(value, Iterable):
+        for item in value:
+            if not isinstance(item, Mapping):
+                continue
+            for key in ("name", "field", "key"):
+                item_value = item.get(key)
+                if (
+                    isinstance(item_value, str)
+                    and _normalize_field_name(item_value) in _STATUS_FIELD_NAMES
+                ):
+                    return _new_value_from_change(item)
+
+    return None
+
+
+def _new_value_from_change(change: Any) -> Any:
+    if isinstance(change, Mapping):
+        for key in ("to", "new", "newValue", "after", "current"):
+            if key in change:
+                return _extract_name(change[key])
+    return _extract_name(change)
 
 
 def _find_string(event: Mapping[str, Any], keys: tuple[str, ...]) -> str | None:
