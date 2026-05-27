@@ -12,7 +12,16 @@ from typing import Any
 TITLE_PREFIX = "Cursor researching"
 TARGET_STATUS = "to research"
 
-_STATUS_FIELDS = {"status", "state", "workflowstate", "workflow_state"}
+_STATUS_FIELDS = {
+    "status",
+    "status_id",
+    "state",
+    "state_id",
+    "workflowstate",
+    "workflowstate_id",
+    "workflow_state",
+    "workflow_state_id",
+}
 _DIRECT_STATUS_CHANGE_EVENTS = {
     "statuschanged",
     "statuschange",
@@ -223,6 +232,8 @@ def _text(value: Any) -> str | None:
     if isinstance(value, str):
         stripped = value.strip()
         return stripped or None
+    if isinstance(value, Mapping):
+        return _text(value.get("name"))
     if isinstance(value, int):
         return str(value)
     return None
