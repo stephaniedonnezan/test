@@ -96,6 +96,33 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
 
         self.assertEqual(result["title"], f"{TITLE_PREFIX}: Review workflow state name")
 
+    def test_updates_when_linear_updated_from_contains_state_id(self):
+        result = build_issue_title_update(
+            {
+                "action": "update",
+                "updatedFrom": {"stateId": "old-state-id"},
+                "data": {
+                    "id": "POI-12",
+                    "title": "Support Linear state id diffs",
+                    "state": {"name": "To Research"},
+                },
+            }
+        )
+
+        self.assertEqual(result["title"], f"{TITLE_PREFIX}: Support Linear state id diffs")
+
+    def test_accepts_status_name_mapping(self):
+        result = build_issue_title_update(
+            {
+                "trigger": "status_changed",
+                "newStatus": {"name": "To Research"},
+                "id": "POI-13",
+                "title": "Status name object",
+            }
+        )
+
+        self.assertEqual(result["title"], f"{TITLE_PREFIX}: Status name object")
+
     def test_returns_none_for_non_target_status(self):
         self.assertIsNone(
             build_issue_title_update(
