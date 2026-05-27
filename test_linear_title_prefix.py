@@ -87,7 +87,7 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             build_issue_title_update(event),
             {
                 "action": "update_issue_title",
-                "issueId": "POI-3333",
+                "issueId": "issue-id",
                 "title": "Cursor researching: Map vendor requirements",
             },
         )
