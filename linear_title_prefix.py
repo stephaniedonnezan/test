@@ -117,16 +117,22 @@ def _is_status_change_event(flattened: Mapping[str, Any], event: Mapping[str, An
         return True
 
     if any(value in {"update", "updated", "issue updated", "updated issue"} for value in normalized_triggers):
-        return _updated_fields_include_status(flattened.get("updatedFields")) or _updated_fields_include_status(
-            flattened.get("updated_fields")
+        return (
+            _updated_fields_include_status(flattened.get("updatedFields"))
+            or _updated_fields_include_status(flattened.get("updated_fields"))
+            or _updated_from_includes_status(flattened.get("updatedFrom"))
         )
 
-    updated_from = flattened.get("updatedFrom")
+    return _updated_from_includes_status(flattened.get("updatedFrom")) or (
+        _normalize_words(event.get("webhookType")) == "issue"
+        and _updated_fields_include_status(flattened.get("updatedFields"))
+    )
+
+
+def _updated_from_includes_status(updated_from: Any) -> bool:
     if isinstance(updated_from, Mapping):
         return any(_normalize_words(key) in STATUS_FIELDS for key in updated_from)
-
-    webhook_type = _normalize_words(event.get("webhookType"))
-    return webhook_type == "issue" and _updated_fields_include_status(flattened.get("updatedFields"))
+    return False
 
 
 def _updated_fields_include_status(value: Any) -> bool:
