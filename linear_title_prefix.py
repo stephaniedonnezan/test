@@ -85,7 +85,7 @@ def _is_status_change_event(payload: Mapping[str, Any]) -> bool:
     if not updated_fields:
         updated_fields = _updated_fields(payload.get("updated_fields"))
 
-    if normalized_triggers & {"update", "issue updated", "updated issue"}:
+    if updated_fields and normalized_triggers & {"update", "issue updated", "updated issue"}:
         return bool(updated_fields & STATUS_FIELDS)
 
     updated_from = payload.get("updatedFrom") or payload.get("updated_from")
