@@ -52,8 +52,8 @@ def build_issue_title_update(event: Mapping[str, Any] | None) -> dict[str, str] 
     if _normalize_label(status) != _normalize_label(TARGET_STATUS):
         return None
 
-    title = _extract_first_string(payload, _TITLE_KEYS)
-    issue_id = _extract_first_string(payload, _ISSUE_ID_KEYS)
+    title = _extract_issue_string(payload, _TITLE_KEYS)
+    issue_id = _extract_issue_string(payload, _ISSUE_ID_KEYS)
     if not title or not issue_id:
         return None
 
@@ -139,18 +139,38 @@ def _extract_status(payload: Mapping[str, Any]) -> str | None:
     return None
 
 
-def _extract_first_string(payload: Mapping[str, Any], keys: Iterable[str]) -> str | None:
+def _extract_issue_string(payload: Mapping[str, Any], keys: Iterable[str]) -> str | None:
+    for container in _issue_containers(payload):
+        value = _extract_direct_string(container, keys)
+        if value:
+            return value
+
+    return _extract_direct_string(payload, keys)
+
+
+def _issue_containers(payload: Mapping[str, Any]) -> Iterable[Mapping[str, Any]]:
+    trigger_context = payload.get("triggerContext")
+    if isinstance(trigger_context, Mapping):
+        yield trigger_context
+
+    issue = payload.get("issue")
+    if isinstance(issue, Mapping):
+        yield issue
+
+    for container_key in ("data", "payload", "webhook"):
+        container = payload.get(container_key)
+        if isinstance(container, Mapping):
+            issue = container.get("issue")
+            if isinstance(issue, Mapping):
+                yield issue
+            yield container
+
+
+def _extract_direct_string(payload: Mapping[str, Any], keys: Iterable[str]) -> str | None:
     for key in keys:
         value = payload.get(key)
         if isinstance(value, str) and value.strip():
             return value
-
-    for container_key in ("issue", "data", "triggerContext"):
-        container = payload.get(container_key)
-        if isinstance(container, Mapping):
-            nested = _extract_first_string(container, keys)
-            if nested:
-                return nested
 
     return None
 
