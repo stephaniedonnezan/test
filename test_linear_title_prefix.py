@@ -113,6 +113,31 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_accepts_updated_fields_payload_with_to_status(self):
+        event = {
+            "action": "update",
+            "type": "Issue",
+            "updatedFields": {
+                "workflowState": {
+                    "from": {"name": "Backlog"},
+                    "to": {"name": "To Research"},
+                }
+            },
+            "data": {
+                "id": "issue-uuid",
+                "title": "Updated fields workflow state",
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "issue-uuid",
+                "title": "Cursor researching: Updated fields workflow state",
+            },
+        )
+
     def test_accepts_updated_from_status_payload(self):
         event = {
             "action": "update",
@@ -204,6 +229,15 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
         self.assertIsNone(
             build_issue_title_update(
                 {"trigger": "status_changed", "newStatus": "to research", "id": "POI-4756"}
+            )
+        )
+        self.assertIsNone(
+            build_issue_title_update(
+                {
+                    "trigger": "status_changed",
+                    "id": "POI-4756",
+                    "state": {"name": "To Research"},
+                }
             )
         )
 

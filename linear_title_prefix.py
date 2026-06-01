@@ -64,6 +64,7 @@ _UPDATE_FIELD_KEYS = (
 )
 _CHANGE_KEYS = ("changes", "updatedFrom", "updated_from")
 _NEW_STATUS_CHANGE_KEYS = ("changes",)
+_STATUS_CONTAINER_KEYS = {"status", "state", "workflowState", "workflow_state"}
 _STATUS_FIELD_NAMES = {
     "status",
     "statusid",
@@ -156,7 +157,7 @@ def _walk_mappings(root: Mapping[str, Any]) -> Iterable[Mapping[str, Any]]:
         yield mapping
 
         for key, value in mapping.items():
-            if key in _SKIP_WALK_KEYS:
+            if key in _SKIP_WALK_KEYS or key in _STATUS_CONTAINER_KEYS:
                 continue
             if isinstance(value, Mapping):
                 enqueue(value)
@@ -185,7 +186,8 @@ def _is_status_change_event(contexts: Iterable[Mapping[str, Any]]) -> bool:
 
 def _updated_fields_include_status(context: Mapping[str, Any]) -> bool:
     return any(
-        _field_collection_includes_status(context.get(key))
+        _status_from_field_updates(context.get(key)) is not None
+        or _field_collection_includes_status(context.get(key))
         for key in _UPDATE_FIELD_KEYS
     )
 
@@ -194,7 +196,12 @@ def _field_collection_includes_status(value: Any) -> bool:
     if isinstance(value, str):
         return _is_status_field_name(value)
     if isinstance(value, Mapping):
-        return any(_is_status_field_name(key) for key in value)
+        if any(_is_status_field_name(key) for key in value):
+            return True
+        return any(
+            _is_status_field_name(value.get(key))
+            for key in ("field", "name", "key")
+        )
     if isinstance(value, Iterable) and not isinstance(value, (str, bytes, Mapping)):
         return any(_field_collection_includes_status(item) for item in value)
     return False
@@ -225,6 +232,30 @@ def _status_from_changes(value: Any) -> Any:
     return None
 
 
+def _status_from_field_updates(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        for key, change in value.items():
+            if _is_status_field_name(key):
+                return _new_value_from_change(change)
+
+        field_name = _first_mapping_text(value, ("field", "name", "key"))
+        if field_name and _is_status_field_name(field_name):
+            return _new_value_from_change(value)
+
+        return None
+
+    if isinstance(value, str):
+        return None
+
+    if isinstance(value, Iterable):
+        for item in value:
+            status = _status_from_field_updates(item)
+            if status is not None:
+                return status
+
+    return None
+
+
 def _new_value_from_change(change: Any) -> Any:
     if isinstance(change, Mapping):
         for key in ("to", "new", "newValue", "new_value", "after", "current"):
@@ -240,6 +271,12 @@ def _find_new_status(contexts: Iterable[Mapping[str, Any]]) -> str | None:
                 status = _status_name(context.get(key))
                 if status:
                     return status
+
+    for context in contexts:
+        for key in _UPDATE_FIELD_KEYS:
+            status = _status_name(_status_from_field_updates(context.get(key)))
+            if status:
+                return status
 
     for context in contexts:
         for key in _NEW_STATUS_CHANGE_KEYS:
