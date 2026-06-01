@@ -15,6 +15,20 @@ TARGET_STATUS = "to research"
 _CAMEL_BOUNDARY_RE = re.compile(r"(?<=[a-z0-9])(?=[A-Z])")
 _STATUS_FIELDS = {"status", "state", "workflowstate", "workflow_state"}
 _TRIGGER_FIELDS = {"trigger", "webhooktype", "webhook_type", "action", "type"}
+_WRAPPER_KEYS = ("issue", "data", "triggerContext", "trigger_context")
+_OUTER_METADATA_KEYS = {
+    "action",
+    "newStatus",
+    "new_status",
+    "statusName",
+    "status_name",
+    "trigger",
+    "type",
+    "updatedFields",
+    "updated_fields",
+    "webhookType",
+    "webhook_type",
+}
 
 
 def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
@@ -53,16 +67,25 @@ def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
 
 
 def _merged_payload(event: Mapping[str, Any]) -> dict[str, Any]:
-    """Flatten common automation and Linear webhook wrappers with outer data last."""
+    """Flatten common automation and Linear webhook wrappers.
+
+    Nested issue data keeps precedence for issue fields such as `id` and `title`;
+    top-level webhook metadata can still refine the trigger/status context.
+    """
 
     payload: dict[str, Any] = {}
 
-    for wrapper_key in ("issue", "data", "triggerContext", "trigger_context"):
+    for wrapper_key in _WRAPPER_KEYS:
         nested = event.get(wrapper_key)
         if isinstance(nested, Mapping):
             payload.update(_merged_payload(nested))
 
-    payload.update(event)
+    for key, value in event.items():
+        if key in _WRAPPER_KEYS:
+            continue
+        if key not in payload or key in _OUTER_METADATA_KEYS:
+            payload[key] = value
+
     return payload
 
 
@@ -75,15 +98,9 @@ def _is_status_change_event(payload: Mapping[str, Any]) -> bool:
 
     if any(_normalize_token(value) in {"statuschanged", "statuschange"} for value in trigger_values):
         return True
-    if any(_normalize_token(value) == "status_changed" for value in trigger_values):
-        return True
-
     updated_fields = payload.get("updatedFields") or payload.get("updated_fields")
     if _contains_status_field(updated_fields):
         return True
-
-    if any(_normalize_token(value) in {"issueupdated", "updatedissue", "update"} for value in trigger_values):
-        return _has_explicit_status(payload)
 
     return False
 
@@ -100,10 +117,6 @@ def _new_status(payload: Mapping[str, Any]) -> Any:
             return _name_or_text(value)
 
     return None
-
-
-def _has_explicit_status(payload: Mapping[str, Any]) -> bool:
-    return any(key in payload for key in ("newStatus", "new_status", "status", "state", "workflowState", "workflow_state"))
 
 
 def _contains_status_field(value: Any) -> bool:
@@ -140,7 +153,7 @@ def _has_research_prefix(title: str) -> bool:
 def _normalize_status(value: Any) -> str | None:
     if not isinstance(value, str):
         return None
-    return " ".join(_split_words(value.lower()))
+    return " ".join(part.lower() for part in _split_words(value))
 
 
 def _normalize_token(value: str) -> str:

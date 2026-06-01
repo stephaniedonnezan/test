@@ -44,6 +44,23 @@ class LinearTitlePrefixTests(unittest.TestCase):
             },
         )
 
+    def test_accepts_camel_case_research_status(self):
+        event = {
+            "trigger": "statusChanged",
+            "newStatus": "toResearch",
+            "id": "POI-3936",
+            "title": "Show Production Site Mass Balance",
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-3936",
+                "title": "Cursor researching: Show Production Site Mass Balance",
+            },
+        )
+
     def test_accepts_nested_linear_issue_update_payload(self):
         event = {
             "action": "update",
@@ -63,6 +80,39 @@ class LinearTitlePrefixTests(unittest.TestCase):
                 "title": "Cursor researching: Show Production Site Mass Balance",
             },
         )
+
+    def test_nested_issue_id_takes_precedence_over_webhook_id(self):
+        event = {
+            "id": "webhook-event-id",
+            "action": "update",
+            "updatedFields": ["state"],
+            "data": {
+                "id": "POI-3936",
+                "title": "Show Production Site Mass Balance",
+                "state": {"name": "to research"},
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-3936",
+                "title": "Cursor researching: Show Production Site Mass Balance",
+            },
+        )
+
+    def test_generic_issue_update_without_updated_status_field_is_ignored(self):
+        event = {
+            "action": "update",
+            "data": {
+                "identifier": "POI-3936",
+                "title": "Show Production Site Mass Balance",
+                "state": {"name": "to research"},
+            },
+        }
+
+        self.assertIsNone(build_issue_title_update(event))
 
     def test_ignores_other_statuses(self):
         event = {
