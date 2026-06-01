@@ -1,0 +1,156 @@
+"""Build Linear issue title updates for Cursor research automation."""
+
+from __future__ import annotations
+
+import json
+import re
+import sys
+from collections.abc import Mapping
+from typing import Any
+
+
+CURSOR_RESEARCHING_PREFIX = "Cursor researching"
+TARGET_STATUS = "to research"
+UPDATE_ACTION = "update_issue_title"
+
+
+def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
+    """Return a Linear title update when an issue moves to To Research."""
+    if not isinstance(event, Mapping):
+        return None
+
+    payload = _flatten_event(event)
+    if not _is_status_change_event(payload):
+        return None
+
+    status = _new_status(payload)
+    if _normalize_value(status) != _normalize_value(TARGET_STATUS):
+        return None
+
+    issue_id = _first_text(payload, "id", "issueId", "issue_id", "identifier")
+    title = _first_text(payload, "title", "name")
+    if not issue_id or not title:
+        return None
+
+    if _has_cursor_researching_prefix(title):
+        return None
+
+    return {
+        "action": UPDATE_ACTION,
+        "issueId": issue_id,
+        "title": f"{CURSOR_RESEARCHING_PREFIX}: {title}",
+    }
+
+
+def _flatten_event(event: Mapping[str, Any]) -> dict[str, Any]:
+    """Flatten common Linear webhook and Cursor automation payload wrappers."""
+    payload: dict[str, Any] = {}
+
+    for key in ("issue", "data", "triggerContext"):
+        value = event.get(key)
+        if isinstance(value, Mapping):
+            payload.update(_flatten_event(value))
+
+    payload.update(event)
+    return payload
+
+
+def _is_status_change_event(payload: Mapping[str, Any]) -> bool:
+    for key in ("trigger", "webhookType", "event", "eventType", "type"):
+        trigger = _first_text(payload, key)
+        if _normalize_value(trigger) in {
+            "status changed",
+            "status change",
+            "statuschanged",
+            "state changed",
+            "state change",
+            "statechanged",
+        }:
+            return True
+
+    action = _normalize_value(_first_text(payload, "action"))
+    if action in {"update", "updated", "issue updated", "updated issue"}:
+        return _contains_status_field(payload.get("updatedFields")) or _contains_status_field(
+            payload.get("updated_fields")
+        )
+
+    return False
+
+
+def _contains_status_field(value: Any) -> bool:
+    if isinstance(value, str):
+        return _normalize_value(value) in {
+            "status",
+            "state",
+            "workflow state",
+            "workflowstate",
+            "state id",
+        }
+
+    if isinstance(value, Mapping):
+        return any(_contains_status_field(item) for item in value.keys())
+
+    if isinstance(value, (list, tuple, set)):
+        return any(_contains_status_field(item) for item in value)
+
+    return False
+
+
+def _new_status(payload: Mapping[str, Any]) -> str | None:
+    status = _first_text(payload, "newStatus", "new_status", "status")
+    if status is not None:
+        return status
+
+    for key in ("state", "workflowState", "workflow_state"):
+        value = payload.get(key)
+        if isinstance(value, Mapping):
+            status = _first_text(value, "name", "title")
+            if status is not None:
+                return status
+        elif isinstance(value, str):
+            status = value.strip()
+            if status:
+                return status
+
+    return None
+
+
+def _first_text(payload: Mapping[str, Any], *keys: str) -> str | None:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, str):
+            text = value.strip()
+            if text:
+                return text
+    return None
+
+
+def _normalize_value(value: str | None) -> str:
+    if not value:
+        return ""
+
+    spaced = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", value)
+    return re.sub(r"[^a-z0-9]+", " ", spaced.lower()).strip()
+
+
+def _has_cursor_researching_prefix(title: str) -> bool:
+    return title.lower().startswith(CURSOR_RESEARCHING_PREFIX.lower())
+
+
+def main() -> int:
+    """Read a Linear event JSON payload from stdin and print a title update."""
+    try:
+        event = json.load(sys.stdin)
+    except json.JSONDecodeError as exc:
+        print(f"Invalid JSON payload: {exc}", file=sys.stderr)
+        return 1
+
+    update = build_issue_title_update(event)
+    if update is not None:
+        print(json.dumps(update))
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
