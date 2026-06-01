@@ -11,7 +11,7 @@ from typing import Any
 
 PREFIX = "Cursor researching"
 TARGET_STATUS = "to research"
-STATUS_FIELD_NAMES = frozenset({"status", "state", "workflowstate", "workflow state"})
+STATUS_FIELD_NAMES = frozenset({"status", "statusid", "state", "stateid", "workflowstate", "workflowstateid"})
 
 
 def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
@@ -27,9 +27,10 @@ def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
     if _normalize_text(_new_status(payload)) != TARGET_STATUS:
         return None
 
+    data = _mapping_value(payload, "data")
     issue = _issue(payload)
-    issue_id = _clean_text(_first_value(issue, payload, keys=("id", "issueId", "issue_id", "identifier")))
-    title = _clean_text(_first_value(issue, payload, keys=("title",)))
+    issue_id = _clean_text(_first_value(issue, data, payload, keys=("id", "issueId", "issue_id", "identifier")))
+    title = _clean_text(_first_value(issue, data, payload, keys=("title",)))
     if not issue_id or not title or _has_prefix(title):
         return None
 
@@ -54,7 +55,7 @@ def _issue(payload: Mapping[str, Any]) -> Mapping[str, Any]:
             issue = nested.get("issue")
             if isinstance(issue, Mapping):
                 return issue
-            if key == "issue":
+            if key == "issue" or _first_value(nested, keys=("id", "identifier", "title")) is not None:
                 return nested
     return {}
 
@@ -104,24 +105,32 @@ def _new_status(payload: Mapping[str, Any]) -> Any:
 
     explicit = _first_value(payload, data, keys=("newStatus", "new_status", "toStatus", "to_status"))
     if explicit is not None:
-        return explicit
+        return _status_label(explicit)
 
     for source in (payload, data, issue):
         value = _nested_name(source, ("state", "workflowState", "workflow_state", "status"))
         if value is not None:
             return value
 
-    return _first_value(payload, data, issue, keys=("status",))
+    direct = _first_value(payload, data, issue, keys=("status", "state", "workflowState", "workflow_state"))
+    return _status_label(direct)
 
 
 def _nested_name(source: Mapping[str, Any], keys: tuple[str, ...]) -> Any:
     for key in keys:
         nested = source.get(key)
         if isinstance(nested, Mapping):
-            name = nested.get("name")
-            if name is not None:
-                return name
+            label = _status_label(nested)
+            if label is not None:
+                return label
     return None
+
+
+def _status_label(value: Any) -> Any:
+    if not isinstance(value, Mapping):
+        return value
+
+    return _first_value(value, keys=("name", "title", "label"))
 
 
 def _first_value(*sources: Mapping[str, Any], keys: tuple[str, ...]) -> Any:

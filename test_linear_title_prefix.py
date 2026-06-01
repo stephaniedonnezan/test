@@ -136,6 +136,43 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_accepts_status_objects_and_state_id_changed_fields(self):
+        event = {
+            "action": "update",
+            "data": {
+                "updatedFields": ["stateId"],
+                "id": "issue-uuid",
+                "title": "CO2 mass balance",
+                "newStatus": {"name": "To Research"},
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "issue-uuid",
+                "title": "Cursor researching: CO2 mass balance",
+            },
+        )
+
+    def test_accepts_direct_state_string_as_new_status(self):
+        event = {
+            "trigger": "status_changed",
+            "state": "toResearch",
+            "id": "POI-4728",
+            "title": "CO2 mass balance",
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4728",
+                "title": "Cursor researching: CO2 mass balance",
+            },
+        )
+
     def test_trims_title_and_issue_id(self):
         event = {
             "trigger": "status_changed",
