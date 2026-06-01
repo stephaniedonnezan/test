@@ -1,0 +1,180 @@
+import json
+import subprocess
+import sys
+import unittest
+
+from linear_title_prefix import build_issue_title_update
+
+
+class LinearTitlePrefixTest(unittest.TestCase):
+    def test_builds_update_for_status_change_to_research(self):
+        event = {
+            "automationId": "automation-1",
+            "triggerContext": {
+                "triggerType": "linear",
+                "webhookType": "issue",
+                "trigger": "status_changed",
+                "newStatus": "To Research",
+                "id": "POI-123",
+                "title": "Investigate export headers",
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-123",
+                "title": "Cursor researching: Investigate export headers",
+            },
+        )
+
+    def test_normalizes_status_casing_separators_and_camel_case_triggers(self):
+        event = {
+            "trigger": "statusChanged",
+            "new_status": "to_research",
+            "issueId": "POI-124",
+            "title": "Compare methane pathways",
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-124",
+                "title": "Cursor researching: Compare methane pathways",
+            },
+        )
+
+    def test_ignores_other_statuses(self):
+        event = {
+            "trigger": "status_changed",
+            "newStatus": "Canceled",
+            "id": "POI-123",
+            "title": "Investigate export headers",
+        }
+
+        self.assertIsNone(build_issue_title_update(event))
+
+    def test_ignores_non_status_change_events(self):
+        event = {
+            "trigger": "comment_created",
+            "newStatus": "To Research",
+            "id": "POI-123",
+            "title": "Investigate export headers",
+        }
+
+        self.assertIsNone(build_issue_title_update(event))
+
+    def test_ignores_already_prefixed_titles(self):
+        event = {
+            "trigger": "statusChanged",
+            "new_status": "to-research",
+            "issueId": "POI-123",
+            "title": "cursor researching: Investigate export headers",
+        }
+
+        self.assertIsNone(build_issue_title_update(event))
+
+    def test_ignores_missing_issue_id_or_title(self):
+        self.assertIsNone(
+            build_issue_title_update(
+                {
+                    "trigger": "status_changed",
+                    "newStatus": "To Research",
+                    "title": "Missing id",
+                }
+            )
+        )
+        self.assertIsNone(
+            build_issue_title_update(
+                {
+                    "trigger": "status_changed",
+                    "newStatus": "To Research",
+                    "id": "POI-123",
+                }
+            )
+        )
+
+    def test_handles_linear_issue_update_payloads(self):
+        event = {
+            "action": "update",
+            "updatedFields": ["state"],
+            "data": {
+                "id": "issue-uuid",
+                "identifier": "POI-456",
+                "title": "Research mass-balance export",
+                "state": {"name": "To Research"},
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "issue-uuid",
+                "title": "Cursor researching: Research mass-balance export",
+            },
+        )
+
+    def test_requires_status_field_for_generic_linear_updates(self):
+        event = {
+            "action": "update",
+            "updatedFields": ["title"],
+            "data": {
+                "id": "issue-uuid",
+                "title": "Research mass-balance export",
+                "state": {"name": "To Research"},
+            },
+        }
+
+        self.assertIsNone(build_issue_title_update(event))
+
+    def test_reads_status_from_workflow_state(self):
+        event = {
+            "action": "Issue Updated",
+            "updatedFields": {"workflowState": {"from": "Todo", "to": "To Research"}},
+            "data": {
+                "identifier": "POI-789",
+                "title": "Research certificates",
+                "workflowState": {"name": "To Research"},
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-789",
+                "title": "Cursor researching: Research certificates",
+            },
+        )
+
+    def test_cli_prints_update_for_matching_payload(self):
+        event = {
+            "trigger": "status_changed",
+            "newStatus": "to research",
+            "id": "POI-321",
+            "title": "Research CLI behavior",
+        }
+
+        result = subprocess.run(
+            [sys.executable, "linear_title_prefix.py"],
+            input=json.dumps(event),
+            capture_output=True,
+            check=True,
+            text=True,
+        )
+
+        self.assertEqual(
+            json.loads(result.stdout),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-321",
+                "title": "Cursor researching: Research CLI behavior",
+            },
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()
