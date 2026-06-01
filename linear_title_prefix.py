@@ -63,7 +63,10 @@ def _merge_payload(event: Mapping[str, Any]) -> dict[str, Any]:
                 if isinstance(deeper, Mapping):
                     payload.update(deeper)
             payload.update(nested)
-    payload.update(event)
+    for key, value in event.items():
+        if key in {"id", "identifier", "issueId", "issue_id", "title", "name"} and key in payload:
+            continue
+        payload[key] = value
     return payload
 
 
@@ -72,7 +75,16 @@ def _is_status_change(event: Mapping[str, Any], payload: Mapping[str, Any]) -> b
     trigger_values.extend(_normalize_value(value) for value in _collect_values(payload, TRIGGER_FIELDS))
     trigger_values = [value for value in trigger_values if value]
 
-    if any(value in {"status changed", "status change", "statuschanged", "state changed"} for value in trigger_values):
+    status_change_values = {
+        "status changed",
+        "status change",
+        "statuschanged",
+        "state changed",
+        "state change",
+        "workflow state changed",
+        "workflow state change",
+    }
+    if any(value in status_change_values for value in trigger_values):
         return True
 
     is_issue_update = any(value in {"update", "updated", "issue updated", "updated issue"} for value in trigger_values)

@@ -77,6 +77,7 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
 
     def test_accepts_nested_linear_issue_update_payload(self):
         event = {
+            "id": "webhook-event-123",
             "action": "update",
             "type": "Issue",
             "updatedFrom": {"stateId": "old-state"},
@@ -93,6 +94,23 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             {
                 "action": "update_issue_title",
                 "issueId": "lin_123",
+                "title": "Cursor researching: Custom LHV",
+            },
+        )
+
+    def test_accepts_workflow_state_change_trigger(self):
+        event = {
+            "trigger": "workflowStateChanged",
+            "newStatus": "To Research",
+            "id": "POI-123",
+            "title": "Custom LHV",
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-123",
                 "title": "Cursor researching: Custom LHV",
             },
         )
