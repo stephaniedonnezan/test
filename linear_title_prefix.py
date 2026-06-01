@@ -23,7 +23,7 @@ _NEW_STATUS_KEYS = (
     "new_workflow_state",
 )
 _TITLE_KEYS = ("title", "name")
-_ISSUE_ID_KEYS = ("issueId", "issue_id", "identifier", "id")
+_ISSUE_ID_KEYS = ("issueId", "issue_id", "id", "identifier")
 
 
 def build_issue_title_update(event: Mapping[str, Any] | None) -> dict[str, str] | None:
