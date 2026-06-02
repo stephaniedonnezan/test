@@ -63,6 +63,7 @@ _UPDATE_FIELD_KEYS = (
     "changed_fields",
 )
 _CHANGE_KEYS = ("changes", "updatedFrom", "updated_from")
+_NEW_STATUS_CHANGE_KEYS = ("changes",)
 _STATUS_CONTAINER_KEYS = {"status", "state", "workflowState", "workflow_state"}
 _STATUS_FIELD_NAMES = {
     "status",
@@ -274,7 +275,7 @@ def _find_new_status(contexts: Iterable[Mapping[str, Any]]) -> str | None:
                 return status
 
     for context in contexts:
-        for key in _CHANGE_KEYS:
+        for key in _NEW_STATUS_CHANGE_KEYS:
             status = _status_name(_status_from_changes(context.get(key)))
             if status:
                 return status
