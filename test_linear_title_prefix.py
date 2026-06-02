@@ -103,6 +103,28 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_accepts_update_metadata_split_across_nested_payload(self):
+        event = {
+            "action": "update",
+            "data": {
+                "updatedFields": ["workflowState"],
+                "issue": {
+                    "identifier": "POI-4770",
+                    "title": "Refactor IEmissionFactor",
+                    "workflowState": {"name": "To Research"},
+                },
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4770",
+                "title": "Cursor researching: Refactor IEmissionFactor",
+            },
+        )
+
     def test_requires_updated_status_field_for_generic_update(self):
         event = {
             "action": "update",

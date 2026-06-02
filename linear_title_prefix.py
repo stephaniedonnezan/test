@@ -98,11 +98,12 @@ def _is_status_change_event(sources: tuple[Mapping[str, Any], ...]) -> bool:
             if _normalize_text(source.get(key)) == "status changed":
                 return True
 
+    status_field_changed = any(_updated_status_field(source) for source in sources)
     for source in sources:
         for key in ("action", "type", "webhookType", "trigger"):
             value = _normalize_text(source.get(key))
             if value in {"issue updated", "updated issue", "update", "updated"}:
-                return _updated_status_field(source)
+                return status_field_changed
 
     return False
 
