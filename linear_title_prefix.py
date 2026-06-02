@@ -169,10 +169,12 @@ def _extract_issue_identity(mappings: list[Mapping[str, Any]]) -> tuple[str | No
 
 
 def _first_string_value(mappings: list[Mapping[str, Any]], keys: tuple[str, ...]) -> str | None:
-    wanted = {_normalize(key) for key in keys}
+    normalized_keys = [(key, _normalize(key)) for key in keys]
     for mapping in mappings:
-        for key, value in mapping.items():
-            if _normalize(key) in wanted and isinstance(value, str) and value.strip():
+        normalized_mapping = {_normalize(key): value for key, value in mapping.items()}
+        for _, normalized_key in normalized_keys:
+            value = normalized_mapping.get(normalized_key)
+            if isinstance(value, str) and value.strip():
                 return value
     return None
 
