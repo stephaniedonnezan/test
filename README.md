@@ -7,5 +7,5 @@ title-update action that prefixes the issue title with `Cursor researching:`.
 Run the tests with:
 
 ```bash
-python -m unittest
+python3 -m unittest
 ```
