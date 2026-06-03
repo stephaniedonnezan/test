@@ -102,6 +102,27 @@ class BuildIssueTitleUpdateTests(unittest.TestCase):
             },
         )
 
+    def test_prefers_nested_issue_identifier_over_webhook_id(self):
+        event = {
+            "id": "webhook-event-id",
+            "action": "update",
+            "updatedFields": ["workflowState"],
+            "data": {
+                "identifier": "POI-4810",
+                "title": "Nested issue with webhook id",
+                "workflowState": {"name": "To Research"},
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4810",
+                "title": "Cursor researching: Nested issue with webhook id",
+            },
+        )
+
     def test_requires_issue_id_and_title(self):
         self.assertIsNone(
             build_issue_title_update(

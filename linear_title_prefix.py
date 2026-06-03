@@ -76,10 +76,7 @@ def build_issue_title_update(event: Mapping[str, Any] | None) -> dict[str, str] 
     if _normalize_words(new_status) != TARGET_STATUS:
         return None
 
-    issue_id = _first_text_for_keys(
-        mappings,
-        ("issueId", "issue_id", "identifier", "id"),
-    )
+    issue_id = _issue_id(mappings)
     title = _first_text_for_keys(mappings, ("title",))
     if not issue_id or not title:
         return None
@@ -175,6 +172,13 @@ def _first_text_for_keys(
             if value:
                 return value
     return None
+
+
+def _issue_id(mappings: Iterable[Mapping[str, Any]]) -> str | None:
+    nested_mappings = list(mappings)
+    return _first_text_for_keys(
+        nested_mappings, ("issueId", "issue_id", "identifier")
+    ) or _first_text_for_keys(nested_mappings, ("id",))
 
 
 def _text_value(value: Any) -> str | None:
