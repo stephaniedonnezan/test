@@ -10,5 +10,5 @@ returns an `update_issue_title` action that prefixes the issue title with
 Run the test suite with:
 
 ```sh
-python -m unittest test_linear_title_prefix.py
+python3 -m unittest test_linear_title_prefix.py
 ```
