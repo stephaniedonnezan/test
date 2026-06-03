@@ -167,7 +167,9 @@ def _new_status(scopes: list[Mapping[str, Any]]) -> str | None:
     return None
 
 
-def _mapping_at(mapping: Mapping[str, Any], key: str) -> Mapping[str, Any] | None:
+def _mapping_at(mapping: Mapping[str, Any] | None, key: str) -> Mapping[str, Any] | None:
+    if not mapping:
+        return None
     value = mapping.get(key)
     return value if isinstance(value, Mapping) else None
 
