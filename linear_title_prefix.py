@@ -1,11 +1,11 @@
-"""Build Linear issue title updates for research status changes."""
+"""Build title updates for Linear issues entering research."""
 
 from __future__ import annotations
 
 import json
 import re
 import sys
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from typing import Any
 
 
@@ -13,145 +13,249 @@ TITLE_PREFIX = "Cursor researching"
 TARGET_STATUS = "to research"
 UPDATE_ACTION = "update_issue_title"
 
+_STATUS_FIELD_NAMES = {
+    "status",
+    "state",
+    "workflow state",
+    "workflowstate",
+}
+_OLD_VALUE_KEYS = {
+    "from",
+    "old",
+    "old status",
+    "oldstatus",
+    "previous",
+    "previous status",
+    "previousstatus",
+    "updated from",
+    "updatedfrom",
+}
 
-def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
-    """Return an issue-title update action when a Linear issue moves to research."""
+
+def build_issue_title_update(event: Mapping[str, Any] | None) -> dict[str, str] | None:
+    """Return a Linear title update action for issues moved to research.
+
+    The Cursor automation trigger uses a flat ``triggerContext`` payload, while
+    raw Linear webhooks commonly nest issue fields under ``data`` or ``issue``.
+    This function accepts both shapes and returns a small action object that the
+    caller can use to update the issue title.
+    """
+
     if not isinstance(event, Mapping):
         return None
 
-    payloads = _payload_layers(event)
-    if not _is_status_change_event(payloads):
+    if not _is_status_change_event(event):
         return None
 
-    status = _first_text(payloads, ("newStatus", "new_status"))
-    if status is None:
-        status = _first_text(payloads, ("status",))
-    if status is None:
-        status = _first_nested_text(payloads, ("state", "workflowState", "status"), "name")
+    status = _extract_new_status(event)
     if _normalize(status) != TARGET_STATUS:
         return None
 
-    issue_id = _first_text(payloads, ("id", "issueId", "issue_id", "identifier"))
-    title = _first_text(payloads, ("title", "name"))
-    if issue_id is None or title is None:
+    title = _extract_issue_field(event, ("title",))
+    if title is None:
         return None
 
-    clean_title = title.strip()
-    if not clean_title or _has_prefix(clean_title):
+    stripped_title = str(title).strip()
+    if not stripped_title:
+        return None
+    if stripped_title.lower().startswith(TITLE_PREFIX.lower()):
+        return None
+
+    issue_id = _extract_issue_field(event, ("issueId", "issue_id", "identifier", "id"))
+    if issue_id is None:
+        return None
+
+    stripped_issue_id = str(issue_id).strip()
+    if not stripped_issue_id:
         return None
 
     return {
         "action": UPDATE_ACTION,
-        "issueId": issue_id.strip(),
-        "title": f"{TITLE_PREFIX}: {clean_title}",
+        "issueId": stripped_issue_id,
+        "title": f"{TITLE_PREFIX}: {stripped_title}",
     }
 
 
-def _payload_layers(event: Mapping[str, Any]) -> list[Mapping[str, Any]]:
-    """Return relevant payload maps from broadest metadata to nested issue details."""
-    layers: list[Mapping[str, Any]] = []
+def _is_status_change_event(event: Mapping[str, Any]) -> bool:
+    trigger_values = _collect_values(
+        event,
+        ("trigger", "event", "eventType", "event_type", "type", "action"),
+    )
+    normalized_triggers = {_normalize(value) for value in trigger_values}
 
-    def visit(value: Any) -> None:
-        if not isinstance(value, Mapping):
-            return
-        if value not in layers:
-            layers.append(value)
-        for key in ("triggerContext", "data", "issue"):
-            nested = value.get(key)
-            if isinstance(nested, Mapping):
-                visit(nested)
-
-    visit(event)
-    return layers
-
-
-def _is_status_change_event(payloads: list[Mapping[str, Any]]) -> bool:
-    event_markers = _all_text(payloads, ("trigger", "webhookType", "action", "type"))
-    normalized_markers = {_normalize(marker) for marker in event_markers}
-
-    if normalized_markers & {"status changed", "status change", "status updated"}:
+    if any(
+        trigger in normalized_triggers
+        for trigger in (
+            "status changed",
+            "status change",
+            "state changed",
+            "state change",
+            "workflow state changed",
+            "workflow state change",
+            "issue status changed",
+            "issue status change",
+        )
+    ):
         return True
 
-    update_markers = {"update", "updated", "issue update", "issue updated", "updated issue"}
-    if normalized_markers & update_markers:
-        return _updated_fields_include_status(payloads)
+    is_issue_update = bool(
+        normalized_triggers
+        & {
+            "update",
+            "updated",
+            "issue updated",
+            "updated issue",
+        }
+    )
+    return is_issue_update and _updated_status_fields_present(event)
 
+
+def _updated_status_fields_present(event: Mapping[str, Any]) -> bool:
+    for mapping in _walk_mappings(event):
+        for key, value in mapping.items():
+            normalized_key = _normalize(key)
+            if normalized_key in {"updated fields", "updatedfields", "changed fields", "changedfields"}:
+                if _contains_status_field(value):
+                    return True
+            if normalized_key in {"updated from", "updatedfrom", "changes"}:
+                if isinstance(value, Mapping) and any(_is_status_field_name(name) for name in value):
+                    return True
     return False
 
 
-def _updated_fields_include_status(payloads: list[Mapping[str, Any]]) -> bool:
-    for payload in payloads:
-        fields = payload.get("updatedFields") or payload.get("updated_fields")
-        if isinstance(fields, str):
-            values = [fields]
-        elif isinstance(fields, (list, tuple, set)):
-            values = [field for field in fields if isinstance(field, str)]
-        else:
-            continue
-
-        if any(_normalize(field) in {"status", "state", "workflow state"} for field in values):
-            return True
+def _contains_status_field(value: Any) -> bool:
+    if isinstance(value, str):
+        return _is_status_field_name(value)
+    if isinstance(value, Mapping):
+        return any(_is_status_field_name(key) or _contains_status_field(item) for key, item in value.items())
+    if isinstance(value, Iterable) and not isinstance(value, (bytes, bytearray)):
+        return any(_contains_status_field(item) for item in value)
     return False
 
 
-def _first_text(payloads: list[Mapping[str, Any]], keys: tuple[str, ...]) -> str | None:
-    for payload in reversed(payloads):
-        for key in keys:
-            value = payload.get(key)
-            if isinstance(value, str) and value.strip():
-                return value
+def _is_status_field_name(value: Any) -> bool:
+    normalized = _normalize(value)
+    return normalized in _STATUS_FIELD_NAMES
+
+
+def _extract_new_status(event: Mapping[str, Any]) -> str | None:
+    explicit_status_keys = (
+        "newStatus",
+        "new_status",
+        "toStatus",
+        "to_status",
+        "statusName",
+        "status_name",
+        "stateName",
+        "state_name",
+        "workflowStateName",
+        "workflow_state_name",
+    )
+    for mapping in _walk_mappings(event, skip_old_values=True):
+        for key in explicit_status_keys:
+            if key in mapping:
+                return _string_or_name(mapping[key])
+
+    fallback_status_keys = ("status", "state", "workflowState", "workflow_state")
+    for mapping in _walk_mappings(event, skip_old_values=True):
+        for key in fallback_status_keys:
+            if key in mapping:
+                return _string_or_name(mapping[key])
+
     return None
 
 
-def _first_nested_text(
-    payloads: list[Mapping[str, Any]],
-    parent_keys: tuple[str, ...],
-    child_key: str,
-) -> str | None:
-    for payload in reversed(payloads):
-        for parent_key in parent_keys:
-            value = payload.get(parent_key)
-            if not isinstance(value, Mapping):
-                continue
-            child_value = value.get(child_key)
-            if isinstance(child_value, str) and child_value.strip():
-                return child_value
+def _string_or_name(value: Any) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, Mapping):
+        for key in ("name", "title", "label"):
+            if key in value and value[key] is not None:
+                return str(value[key])
+        return None
+    return str(value)
+
+
+def _extract_issue_field(event: Mapping[str, Any], keys: tuple[str, ...]) -> str | None:
+    for mapping in _issue_contexts(event):
+        for key in keys:
+            value = mapping.get(key)
+            if value is not None:
+                return str(value)
     return None
 
 
-def _all_text(payloads: list[Mapping[str, Any]], keys: tuple[str, ...]) -> list[str]:
-    values: list[str] = []
-    for payload in payloads:
+def _issue_contexts(event: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    contexts: list[Mapping[str, Any]] = []
+
+    def add(value: Any) -> None:
+        if isinstance(value, Mapping) and value not in contexts:
+            contexts.append(value)
+
+    trigger_context = event.get("triggerContext")
+    data = event.get("data")
+    issue = event.get("issue")
+
+    add(trigger_context)
+    if isinstance(trigger_context, Mapping):
+        add(trigger_context.get("issue"))
+        add(trigger_context.get("data"))
+        nested_data = trigger_context.get("data")
+        if isinstance(nested_data, Mapping):
+            add(nested_data.get("issue"))
+
+    add(issue)
+    add(data)
+    if isinstance(data, Mapping):
+        add(data.get("issue"))
+    add(event)
+
+    return contexts
+
+
+def _collect_values(event: Mapping[str, Any], keys: tuple[str, ...]) -> list[Any]:
+    values: list[Any] = []
+    for mapping in _walk_mappings(event):
         for key in keys:
-            value = payload.get(key)
-            if isinstance(value, str):
-                values.append(value)
+            if key in mapping and not isinstance(mapping[key], Mapping):
+                values.append(mapping[key])
     return values
 
 
-def _has_prefix(title: str) -> bool:
-    return title.casefold().startswith(TITLE_PREFIX.casefold())
+def _walk_mappings(value: Any, *, skip_old_values: bool = False) -> Iterable[Mapping[str, Any]]:
+    if not isinstance(value, Mapping):
+        return
+
+    yield value
+    for key, nested in value.items():
+        if skip_old_values and _normalize(key) in _OLD_VALUE_KEYS:
+            continue
+        if isinstance(nested, Mapping):
+            yield from _walk_mappings(nested, skip_old_values=skip_old_values)
+        elif isinstance(nested, list):
+            for item in nested:
+                if isinstance(item, Mapping):
+                    yield from _walk_mappings(item, skip_old_values=skip_old_values)
 
 
-def _normalize(value: str | None) -> str:
+def _normalize(value: Any) -> str:
     if value is None:
         return ""
-
-    split_camel = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", value)
-    words = re.sub(r"[^A-Za-z0-9]+", " ", split_camel).strip().casefold()
-    return re.sub(r"\s+", " ", words)
+    text = str(value).strip()
+    text = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", text)
+    text = re.sub(r"[^A-Za-z0-9]+", " ", text)
+    return " ".join(text.lower().split())
 
 
 def main() -> int:
-    """Read a JSON event from stdin and print the title update action, when any."""
     try:
         event = json.load(sys.stdin)
     except json.JSONDecodeError as exc:
-        raise SystemExit(f"Invalid JSON input: {exc}") from exc
+        print(f"Invalid JSON: {exc}", file=sys.stderr)
+        return 2
 
-    update = build_issue_title_update(event)
-    if update is not None:
-        print(json.dumps(update, sort_keys=True))
+    result = build_issue_title_update(event)
+    print(json.dumps(result, sort_keys=True))
     return 0
 
 
