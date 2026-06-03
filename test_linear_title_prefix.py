@@ -3,19 +3,21 @@ import subprocess
 import sys
 import unittest
 
-from linear_title_prefix import build_issue_title_update
+from linear_title_prefix import build_issue_title_update, handle_issue_status_changed
 
 
 class BuildIssueTitleUpdateTest(unittest.TestCase):
-    def test_flat_status_changed_to_research_prefixes_title(self):
+    def test_adds_prefix_for_current_cursor_status_change_trigger_context(self):
         event = {
             "triggerContext": {
+                "triggerType": "linear",
+                "webhookType": "issue",
                 "trigger": "status_changed",
                 "newStatus": "To Research",
                 "id": "POI-4817",
                 "title": (
-                    "User must be able to add an input to the trader: it should "
-                    "appear and be editable"
+                    "User must be able to add an input to the trader: "
+                    "it should appear and be editable"
                 ),
             }
         }
@@ -26,38 +28,36 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
                 "action": "update_issue_title",
                 "issueId": "POI-4817",
                 "title": (
-                    "Cursor researching: User must be able to add an input to the "
-                    "trader: it should appear and be editable"
+                    "Cursor researching: User must be able to add an input "
+                    "to the trader: it should appear and be editable"
                 ),
             },
         )
 
-    def test_uses_status_when_new_status_is_absent(self):
+    def test_accepts_camel_case_trigger_and_status(self):
         event = {
-            "trigger": "statusChanged",
-            "status": "to_research",
-            "issueId": "POI-4817",
-            "title": "Add input goes to trader",
+            "triggerContext": {
+                "trigger": "statusChanged",
+                "newStatus": "toResearch",
+                "issueId": "POI-4817",
+                "title": "Research title",
+            }
         }
 
         self.assertEqual(
-            build_issue_title_update(event),
-            {
-                "action": "update_issue_title",
-                "issueId": "POI-4817",
-                "title": "Cursor researching: Add input goes to trader",
-            },
+            build_issue_title_update(event)["title"],
+            "Cursor researching: Research title",
         )
 
-    def test_accepts_linear_update_when_status_field_changed(self):
+    def test_accepts_nested_linear_issue_update_payload(self):
         event = {
-            "action": "update",
-            "updatedFields": ["description", "workflowState"],
+            "action": "Issue Updated",
+            "updatedFields": ["state"],
             "data": {
                 "issue": {
                     "identifier": "POI-4817",
-                    "title": "Add input goes to trader",
-                    "workflowState": {"name": "toResearch"},
+                    "title": "Nested issue title",
+                    "state": {"name": "To Research"},
                 }
             },
         }
@@ -67,85 +67,208 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             {
                 "action": "update_issue_title",
                 "issueId": "POI-4817",
-                "title": "Cursor researching: Add input goes to trader",
+                "title": "Cursor researching: Nested issue title",
             },
         )
 
-    def test_ignores_non_research_status(self):
+    def test_prefers_nested_issue_id_over_webhook_event_id(self):
         event = {
-            "trigger": "status_changed",
-            "newStatus": "In Progress",
-            "id": "POI-4817",
-            "title": "Add input goes to trader",
+            "id": "webhook-event-id",
+            "action": "Issue Updated",
+            "updatedFields": ["state"],
+            "data": {
+                "issue": {
+                    "identifier": "POI-4817",
+                    "title": "Nested issue id wins",
+                    "state": {"name": "To Research"},
+                }
+            },
         }
-
-        self.assertIsNone(build_issue_title_update(event))
-
-    def test_ignores_non_status_trigger(self):
-        event = {
-            "trigger": "comment_created",
-            "newStatus": "to research",
-            "id": "POI-4817",
-            "title": "Add input goes to trader",
-        }
-
-        self.assertIsNone(build_issue_title_update(event))
-
-    def test_ignores_update_without_status_field_change(self):
-        event = {
-            "action": "update",
-            "updatedFields": ["title"],
-            "status": "to research",
-            "id": "POI-4817",
-            "title": "Add input goes to trader",
-        }
-
-        self.assertIsNone(build_issue_title_update(event))
-
-    def test_ignores_existing_prefix_case_insensitively(self):
-        event = {
-            "trigger": "status_changed",
-            "newStatus": "to research",
-            "id": "POI-4817",
-            "title": "cursor researching: Add input goes to trader",
-        }
-
-        self.assertIsNone(build_issue_title_update(event))
-
-    def test_requires_issue_id_and_title(self):
-        event = {
-            "trigger": "status_changed",
-            "newStatus": "to research",
-            "id": "POI-4817",
-            "title": " ",
-        }
-
-        self.assertIsNone(build_issue_title_update(event))
-
-    def test_cli_prints_update_action_for_matching_payload(self):
-        event = {
-            "triggerContext": {
-                "trigger": "status_changed",
-                "newStatus": "to research",
-                "id": "POI-4817",
-                "title": "Add input goes to trader",
-            }
-        }
-
-        result = subprocess.run(
-            [sys.executable, "linear_title_prefix.py"],
-            check=True,
-            input=json.dumps(event),
-            text=True,
-            capture_output=True,
-        )
 
         self.assertEqual(
-            json.loads(result.stdout),
+            build_issue_title_update(event),
             {
                 "action": "update_issue_title",
                 "issueId": "POI-4817",
-                "title": "Cursor researching: Add input goes to trader",
+                "title": "Cursor researching: Nested issue id wins",
+            },
+        )
+
+    def test_accepts_changes_payload_with_to_status(self):
+        event = {
+            "action": "update",
+            "type": "Issue",
+            "changes": {
+                "workflowState": {
+                    "from": {"name": "Backlog"},
+                    "to": {"name": "To Research"},
+                }
+            },
+            "data": {
+                "id": "issue-uuid",
+                "title": "Changed workflow state",
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "issue-uuid",
+                "title": "Cursor researching: Changed workflow state",
+            },
+        )
+
+    def test_accepts_updated_fields_payload_with_to_status(self):
+        event = {
+            "action": "update",
+            "type": "Issue",
+            "updatedFields": {
+                "workflowState": {
+                    "from": {"name": "Backlog"},
+                    "to": {"name": "To Research"},
+                }
+            },
+            "data": {
+                "id": "issue-uuid",
+                "title": "Updated fields workflow state",
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "issue-uuid",
+                "title": "Cursor researching: Updated fields workflow state",
+            },
+        )
+
+    def test_accepts_updated_from_status_payload_without_using_old_status(self):
+        event = {
+            "action": "update",
+            "type": "Issue",
+            "updatedFrom": {"stateId": "old-state-id"},
+            "data": {
+                "id": "issue-uuid",
+                "title": "State id update",
+                "state": {"name": "To Research"},
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "issue-uuid",
+                "title": "Cursor researching: State id update",
+            },
+        )
+
+    def test_ignores_status_changes_to_other_statuses(self):
+        event = {
+            "triggerContext": {
+                "trigger": "status_changed",
+                "newStatus": "In Progress",
+                "id": "POI-4817",
+                "title": "Implementation title",
+            }
+        }
+
+        self.assertIsNone(build_issue_title_update(event))
+
+    def test_ignores_non_status_change_events(self):
+        event = {
+            "triggerContext": {
+                "trigger": "comment_created",
+                "newStatus": "to research",
+                "id": "POI-4817",
+                "title": "Comment title",
+            }
+        }
+
+        self.assertIsNone(build_issue_title_update(event))
+
+    def test_ignores_issue_update_without_status_field_change(self):
+        event = {
+            "action": "Issue Updated",
+            "updatedFields": ["title"],
+            "data": {
+                "issue": {
+                    "identifier": "POI-4817",
+                    "title": "Title-only update",
+                    "state": {"name": "To Research"},
+                }
+            },
+        }
+
+        self.assertIsNone(build_issue_title_update(event))
+
+    def test_does_not_duplicate_existing_prefix(self):
+        event = {
+            "triggerContext": {
+                "trigger": "status_changed",
+                "newStatus": "To Research",
+                "id": "POI-4817",
+                "title": "cursor researching: Existing title",
+            }
+        }
+
+        self.assertIsNone(build_issue_title_update(event))
+
+    def test_alias_matches_primary_handler(self):
+        event = {
+            "trigger": "status_changed",
+            "newStatus": "to-research",
+            "id": "POI-4817",
+            "title": "Alias title",
+        }
+
+        self.assertEqual(handle_issue_status_changed(event), build_issue_title_update(event))
+
+    def test_ignores_missing_issue_id_or_title(self):
+        self.assertIsNone(
+            build_issue_title_update(
+                {"trigger": "status_changed", "newStatus": "to research", "title": "No id"}
+            )
+        )
+        self.assertIsNone(
+            build_issue_title_update(
+                {"trigger": "status_changed", "newStatus": "to research", "id": "POI-4817"}
+            )
+        )
+        self.assertIsNone(
+            build_issue_title_update(
+                {
+                    "trigger": "status_changed",
+                    "id": "POI-4817",
+                    "state": {"name": "To Research"},
+                }
+            )
+        )
+
+    def test_cli_prints_json_update_action(self):
+        payload = {
+            "trigger": "status_changed",
+            "newStatus": "to research",
+            "id": "POI-4817",
+            "title": "CLI title",
+        }
+
+        completed = subprocess.run(
+            [sys.executable, "linear_title_prefix.py"],
+            input=json.dumps(payload),
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+
+        self.assertEqual(
+            json.loads(completed.stdout),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4817",
+                "title": "Cursor researching: CLI title",
             },
         )
 
