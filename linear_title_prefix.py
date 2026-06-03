@@ -16,7 +16,7 @@ from typing import Any
 
 PREFIX = "Cursor researching"
 RESEARCH_STATUS = "to research"
-STATUS_FIELD_NAMES = {"status", "state", "workflowstate", "workflow_status"}
+STATUS_FIELD_NAMES = {"status", "state", "workflowstate", "workflow_state", "workflow_status"}
 
 
 def build_issue_title_update(event: Mapping[str, Any] | None) -> dict[str, str] | None:
@@ -37,7 +37,7 @@ def build_issue_title_update(event: Mapping[str, Any] | None) -> dict[str, str] 
     if _normalize_label(status) != RESEARCH_STATUS:
         return None
 
-    issue_id = _extract_first_text(context, ("id", "issueId", "issue_id", "identifier"))
+    issue_id = _extract_first_text(context, ("issueId", "issue_id", "identifier", "id"))
     title = _extract_first_text(context, ("title", "name"))
     if not issue_id or not title:
         return None

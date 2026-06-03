@@ -88,12 +88,13 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
 
     def test_handles_nested_linear_update_payload_when_status_field_changed(self):
         event = {
+            "id": "webhook-event-id",
             "action": "update",
-            "updatedFields": ["state"],
+            "updatedFields": ["workflowState"],
             "data": {
                 "identifier": "POI-4793",
                 "title": "Blocked delivery 7872",
-                "state": {"name": "To Research"},
+                "workflowState": {"name": "To Research"},
             },
         }
 
