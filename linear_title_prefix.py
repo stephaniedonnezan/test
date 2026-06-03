@@ -198,7 +198,7 @@ def _values_for_keys(value: Any, keys: Iterable[str]) -> Iterable[Any]:
 def _normalize(value: Any) -> str:
     if not isinstance(value, str):
         return ""
-    return re.sub(r"[^a-z0-9]", "", value).lower()
+    return re.sub(r"[^a-z0-9]", "", value.lower())
 
 
 def main() -> int:
