@@ -8,5 +8,5 @@ helper emits an `update_issue_title` action that prefixes the issue title with
 Run the test suite with:
 
 ```sh
-python -m unittest -v
+python3 -m unittest -v
 ```
