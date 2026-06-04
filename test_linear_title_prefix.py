@@ -101,6 +101,25 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_nested_issue_id_takes_precedence_over_webhook_id(self):
+        event = {
+            "id": "webhook-event-id",
+            "action": "update",
+            "updatedFields": ["state"],
+            "data": {
+                "issue": {
+                    "id": "issue-id",
+                    "title": "Nested issue title",
+                    "state": {"name": "To Research"},
+                }
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event)["issueId"],
+            "issue-id",
+        )
+
     def test_supports_updated_fields_mapping(self):
         event = {
             "type": "Issue Updated",

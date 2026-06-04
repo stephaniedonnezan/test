@@ -27,8 +27,12 @@ def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
     if _normalize(status) != TARGET_STATUS:
         return None
 
-    issue_id = _clean_text(_first_value(context, ("id", "issueId", "issue_id", "identifier")))
-    title = _clean_text(_first_value(context, ("title",)))
+    issue = _issue_payload(event)
+    issue_id = _clean_text(
+        _first_value(issue, ("id", "issueId", "issue_id", "identifier"))
+        or _first_value(context, ("id", "issueId", "issue_id", "identifier"))
+    )
+    title = _clean_text(_first_value(issue, ("title",)) or _first_value(context, ("title",)))
     if not issue_id or not title or _has_prefix(title):
         return None
 
@@ -59,6 +63,20 @@ def _event_context(event: Mapping[str, Any]) -> dict[str, Any]:
         context.update(trigger_context)
 
     return context
+
+
+def _issue_payload(event: Mapping[str, Any]) -> Mapping[str, Any]:
+    for path in (("data", "issue"), ("issue",), ("triggerContext",)):
+        nested = _nested_mapping(event, path)
+        if nested and _looks_like_issue(nested):
+            return nested
+
+    return event
+
+
+def _looks_like_issue(value: Mapping[str, Any]) -> bool:
+    issue_keys = {"id", "issueId", "issue_id", "identifier", "title"}
+    return any(key in value for key in issue_keys)
 
 
 def _nested_mapping(event: Mapping[str, Any], path: Sequence[str]) -> Mapping[str, Any] | None:
