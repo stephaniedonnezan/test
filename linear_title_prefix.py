@@ -30,12 +30,16 @@ _FALLBACK_STATUS_KEYS = ("status", "state", "workflowState", "workflow_state")
 _STATUS_CHANGE_FIELDS = {
     "status",
     "statusid",
+    "statusname",
     "state",
     "stateid",
+    "statename",
     "workflowstate",
     "workflowstateid",
+    "workflowstatename",
     "workflow_state",
     "workflow_state_id",
+    "workflow_state_name",
 }
 
 
@@ -53,8 +57,9 @@ def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
     if _normalize_status(status) != RESEARCH_STATUS:
         return None
 
-    issue_id = _extract_text(contexts, ("id", "issueId", "issue_id", "identifier"))
-    title = _extract_text(contexts, ("title", "name"))
+    issue_contexts = _issue_contexts(event)
+    issue_id = _extract_text(issue_contexts, ("id", "issueId", "issue_id", "identifier"))
+    title = _extract_text(issue_contexts, ("title", "name"))
     if not issue_id or not title:
         return None
 
@@ -92,6 +97,32 @@ def _contexts(event: Mapping[str, Any]) -> list[Mapping[str, Any]]:
                 add(parent["data"])
                 add(parent["data"].get("issue"))
 
+    return contexts
+
+
+def _issue_contexts(event: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    """Prefer Linear issue scopes over wrapper metadata when extracting identity."""
+
+    contexts: list[Mapping[str, Any]] = []
+
+    def add(value: Any) -> None:
+        if isinstance(value, Mapping) and value not in contexts:
+            contexts.append(value)
+
+    trigger_context = event.get("triggerContext")
+    data = event.get("data")
+
+    add(trigger_context)
+    for parent in (trigger_context, data, event):
+        if isinstance(parent, Mapping):
+            add(parent.get("issue"))
+            nested_data = parent.get("data")
+            if isinstance(nested_data, Mapping):
+                add(nested_data.get("issue"))
+                add(nested_data)
+
+    add(data)
+    add(event)
     return contexts
 
 

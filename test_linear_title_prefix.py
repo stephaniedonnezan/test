@@ -101,6 +101,24 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             "Cursor researching: Display CO2 balance on frontend MB",
         )
 
+    def test_prefers_nested_issue_id_over_wrapper_id(self):
+        result = build_issue_title_update(
+            {
+                "id": "webhook-delivery-id",
+                "action": "update",
+                "updatedFields": ["state.name"],
+                "data": {
+                    "issue": {
+                        "id": "issue-uuid",
+                        "title": "Display CO2 balance on frontend MB",
+                        "state": {"name": "To Research"},
+                    }
+                },
+            }
+        )
+
+        self.assertEqual(result["issueId"], "issue-uuid")
+
     def test_supports_nested_linear_issue_update_payload(self):
         result = build_issue_title_update(
             {
