@@ -163,11 +163,6 @@ def _new_status(event: Mapping[str, Any]) -> str | None:
         if status:
             return status
 
-    for candidate in _candidate_mappings(event):
-        status = _first_status_value(candidate, fallback_keys)
-        if status:
-            return status
-
     return None
 
 
