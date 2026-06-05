@@ -34,10 +34,14 @@ def build_issue_title_update(event: Mapping[str, Any] | None) -> dict[str, str] 
         return None
 
     mappings = list(_walk_mappings(event))
+    target_status_mappings = list(_walk_mappings(event, skip_keys=("updatedFrom",)))
     if not _is_status_change_event(mappings):
         return None
 
-    if not any(_normalize_text(status) == TARGET_STATUS for status in _new_status_candidates(mappings)):
+    if not any(
+        _normalize_text(status) == TARGET_STATUS
+        for status in _new_status_candidates(target_status_mappings)
+    ):
         return None
 
     issue_id = _first_text(mappings, ("issueId", "issue_id", "id", "identifier", "key"))
@@ -58,14 +62,17 @@ def handle_issue_status_changed(event: Mapping[str, Any] | None) -> dict[str, st
     return build_issue_title_update(event)
 
 
-def _walk_mappings(value: Any) -> Iterable[Mapping[str, Any]]:
+def _walk_mappings(value: Any, skip_keys: tuple[str, ...] = ()) -> Iterable[Mapping[str, Any]]:
+    skipped = {_compact(key) for key in skip_keys}
     if isinstance(value, Mapping):
         yield value
-        for nested in value.values():
-            yield from _walk_mappings(nested)
+        for key, nested in value.items():
+            if _compact(key) in skipped:
+                continue
+            yield from _walk_mappings(nested, skip_keys)
     elif isinstance(value, list):
         for item in value:
-            yield from _walk_mappings(item)
+            yield from _walk_mappings(item, skip_keys)
 
 
 def _is_status_change_event(mappings: list[Mapping[str, Any]]) -> bool:
