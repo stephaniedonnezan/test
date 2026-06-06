@@ -1,0 +1,130 @@
+import unittest
+
+from linear_title_prefix import build_issue_title_update
+
+
+class BuildIssueTitleUpdateTest(unittest.TestCase):
+    def test_cursor_trigger_context_to_research(self):
+        event = {
+            "triggerContext": {
+                "triggerType": "linear",
+                "webhookType": "issue",
+                "trigger": "status_changed",
+                "newStatus": "To Research",
+                "title": "UBA POS: version number is not incremented",
+                "id": "POI-4839",
+            }
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4839",
+                "title": "Cursor researching: UBA POS: version number is not incremented",
+            },
+        )
+
+    def test_flat_status_changed_event_to_research(self):
+        event = {
+            "trigger": "statusChanged",
+            "status": "to research",
+            "title": "Investigate retry behavior",
+            "issueId": "POI-1",
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-1",
+                "title": "Cursor researching: Investigate retry behavior",
+            },
+        )
+
+    def test_nested_linear_issue_update_with_state_change(self):
+        event = {
+            "action": "update",
+            "data": {
+                "id": "linear-issue-id",
+                "identifier": "POI-2",
+                "title": "Research settlement mismatch",
+                "state": {"name": "to_research"},
+            },
+            "updatedFrom": {"stateId": "old-state-id"},
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "linear-issue-id",
+                "title": "Cursor researching: Research settlement mismatch",
+            },
+        )
+
+    def test_normalizes_to_research_variants(self):
+        for status in ("to-research", "to_research", "toResearch", "TO RESEARCH"):
+            with self.subTest(status=status):
+                event = {
+                    "trigger": "status_changed",
+                    "status": status,
+                    "title": "Check terminal batching",
+                    "id": "POI-3",
+                }
+
+                self.assertEqual(
+                    build_issue_title_update(event),
+                    {
+                        "action": "update_issue_title",
+                        "issueId": "POI-3",
+                        "title": "Cursor researching: Check terminal batching",
+                    },
+                )
+
+    def test_ignores_non_research_status(self):
+        event = {
+            "triggerContext": {
+                "trigger": "status_changed",
+                "newStatus": "In Progress",
+                "title": "UBA POS: version number is not incremented",
+                "id": "POI-4839",
+            }
+        }
+
+        self.assertIsNone(build_issue_title_update(event))
+
+    def test_ignores_non_status_update(self):
+        event = {
+            "action": "update",
+            "data": {
+                "id": "POI-4",
+                "title": "Investigate order export",
+                "state": {"name": "To Research"},
+            },
+            "updatedFrom": {"title": "Old title"},
+        }
+
+        self.assertIsNone(build_issue_title_update(event))
+
+    def test_ignores_existing_research_prefix_case_insensitively(self):
+        event = {
+            "trigger": "status_changed",
+            "status": "To Research",
+            "title": "cursor researching: Investigate duplicate prefix",
+            "id": "POI-5",
+        }
+
+        self.assertIsNone(build_issue_title_update(event))
+
+    def test_ignores_missing_title_or_issue_id(self):
+        self.assertIsNone(
+            build_issue_title_update({"trigger": "status_changed", "status": "To Research", "id": "POI-6"})
+        )
+        self.assertIsNone(
+            build_issue_title_update({"trigger": "status_changed", "status": "To Research", "title": "No id"})
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()
