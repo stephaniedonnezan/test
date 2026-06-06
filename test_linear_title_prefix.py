@@ -63,6 +63,49 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_nested_issue_id_wins_over_outer_webhook_id(self):
+        event = {
+            "id": "webhook-event-id",
+            "action": "update",
+            "data": {
+                "issue": {
+                    "id": "linear-issue-id",
+                    "title": "Research authorization timeout",
+                    "state": {"name": "To Research"},
+                }
+            },
+            "updatedFrom": {"stateId": "old-state-id"},
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "linear-issue-id",
+                "title": "Cursor researching: Research authorization timeout",
+            },
+        )
+
+    def test_nested_issue_title_wins_over_outer_webhook_title(self):
+        event = {
+            "title": "Webhook envelope title",
+            "trigger": "status_changed",
+            "status": "To Research",
+            "issue": {
+                "id": "POI-7",
+                "title": "Investigate webhook issue title",
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-7",
+                "title": "Cursor researching: Investigate webhook issue title",
+            },
+        )
+
     def test_normalizes_to_research_variants(self):
         for status in ("to-research", "to_research", "toResearch", "TO RESEARCH"):
             with self.subTest(status=status):
