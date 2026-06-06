@@ -11,5 +11,5 @@ Cursor researching - Existing issue title
 Run the tests with:
 
 ```bash
-python -m unittest
+python3 -m unittest
 ```
