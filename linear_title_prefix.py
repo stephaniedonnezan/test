@@ -66,7 +66,7 @@ def _is_status_change_event(event: Mapping[str, Any]) -> bool:
         if source.get("statusChanged") is True or source.get("status_changed") is True:
             return True
 
-    action = _first_string_from_candidates(event, ("action", "type"))
+    action = _first_string_from_event_candidates(event, ("action", "type"))
     if _normalize_words(action) in {"update", "issue updated", "updated"}:
         return _changed_fields_include_status(event)
 
@@ -105,7 +105,7 @@ def _extract_issue_id(event: Mapping[str, Any]) -> str | None:
 
 
 def _first_status_from_candidates(event: Mapping[str, Any], keys: tuple[str, ...]) -> str | None:
-    for source in _candidate_dicts(event):
+    for source in _issue_candidate_dicts(event):
         for key in keys:
             value = source.get(key)
             status = _status_to_string(value)
@@ -115,6 +115,14 @@ def _first_status_from_candidates(event: Mapping[str, Any], keys: tuple[str, ...
 
 
 def _first_string_from_candidates(event: Mapping[str, Any], keys: tuple[str, ...]) -> str | None:
+    for source in _issue_candidate_dicts(event):
+        value = _first_string(source, keys)
+        if value:
+            return value
+    return None
+
+
+def _first_string_from_event_candidates(event: Mapping[str, Any], keys: tuple[str, ...]) -> str | None:
     for source in _candidate_dicts(event):
         value = _first_string(source, keys)
         if value:
@@ -141,7 +149,7 @@ def _status_to_string(value: Any) -> str | None:
 
 
 def _candidate_dicts(event: Mapping[str, Any]) -> Iterable[Mapping[str, Any]]:
-    """Yield likely event/issue containers from most-specific to broadest."""
+    """Yield likely event/issue containers for event-metadata checks."""
 
     seen: set[int] = set()
 
@@ -165,6 +173,33 @@ def _candidate_dicts(event: Mapping[str, Any]) -> Iterable[Mapping[str, Any]]:
         yield from visit(trigger_context)
 
     yield from visit(event)
+
+
+def _issue_candidate_dicts(event: Mapping[str, Any]) -> Iterable[Mapping[str, Any]]:
+    """Yield likely issue containers before broader webhook envelope objects."""
+
+    seen: set[int] = set()
+
+    for path in (
+        ("triggerContext",),
+        ("data", "issue"),
+        ("issue",),
+        ("data",),
+        (),
+    ):
+        value = _value_at_path(event, path)
+        if isinstance(value, Mapping) and id(value) not in seen:
+            seen.add(id(value))
+            yield value
+
+
+def _value_at_path(source: Mapping[str, Any], path: tuple[str, ...]) -> Any:
+    value: Any = source
+    for key in path:
+        if not isinstance(value, Mapping):
+            return None
+        value = value.get(key)
+    return value
 
 
 def _has_research_prefix(title: str) -> bool:
