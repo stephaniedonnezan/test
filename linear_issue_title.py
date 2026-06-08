@@ -11,7 +11,7 @@ from typing import Any
 
 RESEARCHING_PREFIX = "Cursor researching"
 TO_RESEARCH_STATUS = "to research"
-STATUS_CHANGED_TRIGGER = "status_changed"
+_NORMALIZED_STATUS_CHANGED_TRIGGER = "status changed"
 
 _RESEARCHING_PREFIX_PATTERN = re.compile(
     rf"^\s*{re.escape(RESEARCHING_PREFIX)}(?:\s*[-:|]\s*|\s+)?",
@@ -51,7 +51,10 @@ def updated_title_for_status_change(payload: Mapping[str, Any]) -> str | None:
     context = _trigger_context(payload)
 
     trigger = context.get("trigger")
-    if isinstance(trigger, str) and _normalize_token(trigger) != STATUS_CHANGED_TRIGGER:
+    if (
+        isinstance(trigger, str)
+        and _normalize_token(trigger) != _NORMALIZED_STATUS_CHANGED_TRIGGER
+    ):
         return None
 
     status = context.get("newStatus", context.get("status"))
