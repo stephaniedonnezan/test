@@ -27,5 +27,5 @@ Use `--dry-run` to print the update without calling Linear.
 ### Tests
 
 ```bash
-python -m unittest discover -s tests
+python3 -m unittest discover -s tests
 ```
