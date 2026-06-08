@@ -24,7 +24,7 @@ def _normalize_words(value: str) -> str:
 
 
 def _normalize_token(value: str) -> str:
-    return _normalize_words(re.sub(r"[^a-z0-9]+", " ", value))
+    return _normalize_words(re.sub(r"[^a-z0-9]+", " ", value.lower()))
 
 
 def _trigger_context(payload: Mapping[str, Any]) -> Mapping[str, Any]:
