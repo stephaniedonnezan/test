@@ -130,7 +130,7 @@ def _is_status_change_event(contexts: Sequence[Mapping[str, Any]]) -> bool:
     if any(value in _GENERIC_UPDATE_EVENTS for value in trigger_values):
         return _has_status_change_metadata(contexts)
 
-    return _has_explicit_status(contexts) and _has_status_change_metadata(contexts)
+    return False
 
 
 def _has_status_change_metadata(contexts: Sequence[Mapping[str, Any]]) -> bool:
