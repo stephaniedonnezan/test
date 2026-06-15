@@ -72,7 +72,7 @@ def _build_context(event: Mapping[str, Any]) -> dict[str, Any]:
     _merge_mapping(context, _as_mapping(event.get("triggerContext")))
     _merge_mapping(context, _as_mapping(event.get("issue")))
 
-    data = _as_mapping(event.get("data"))
+    data = _as_mapping(event.get("data")) or {}
     _merge_mapping(context, data)
     _merge_mapping(context, _as_mapping(data.get("issue")))
 
