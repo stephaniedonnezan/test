@@ -19,9 +19,7 @@ PREFIX = "Cursor researching"
 TARGET_STATUS = "to research"
 STATUS_FIELDS = {"status", "state", "workflowstate", "workflow_state"}
 STATUS_CHANGE_TRIGGERS = {
-    "statuschanged",
     "statuschange",
-    "statuschanged",
     "statuschanged",
 }
 ISSUE_UPDATE_TRIGGERS = {
@@ -115,7 +113,7 @@ def _event_type_values(event: Mapping[str, Any]) -> set[str]:
 
 def _updated_fields_include_status(context: Mapping[str, Any]) -> bool:
     updated_fields = context.get("updatedFields") or context.get("updated_fields")
-    if not isinstance(updated_fields, list | tuple | set):
+    if not isinstance(updated_fields, (list, tuple, set)):
         return False
 
     return any(_normalize_field(field) in STATUS_FIELDS for field in updated_fields)
@@ -126,7 +124,7 @@ def _changes_include_status(context: Mapping[str, Any]) -> bool:
     if isinstance(changes, Mapping):
         return any(_normalize_field(field) in STATUS_FIELDS for field in changes)
 
-    if isinstance(changes, list | tuple):
+    if isinstance(changes, (list, tuple)):
         for change in changes:
             if isinstance(change, Mapping):
                 field = change.get("field") or change.get("name")
@@ -159,7 +157,7 @@ def _changed_status(context: Mapping[str, Any]) -> str | None:
                 if text:
                     return text
 
-    if isinstance(changes, list | tuple):
+    if isinstance(changes, (list, tuple)):
         for change in changes:
             if not isinstance(change, Mapping):
                 continue
