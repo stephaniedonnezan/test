@@ -154,18 +154,8 @@ def _status_from_changes(value: Any) -> str | None:
     if isinstance(value, Mapping):
         for key, nested_value in value.items():
             normalized_key = _normalize_key(key)
-            if normalized_key in STATUS_FIELDS:
-                status = _status_value_from_change(nested_value)
-                if status:
-                    return status
             if normalized_key in {"changes", "changed", "updates"}:
-                status = _status_from_changes(nested_value)
-                if status:
-                    return status
-            if isinstance(nested_value, Mapping) and _normalize_key(
-                nested_value.get("field") or nested_value.get("fieldName")
-            ) in STATUS_FIELDS:
-                status = _status_value_from_change(nested_value)
+                status = _status_from_change_container(nested_value)
                 if status:
                     return status
 
@@ -175,6 +165,32 @@ def _status_from_changes(value: Any) -> str | None:
     elif isinstance(value, list):
         for item in value:
             status = _status_from_changes(item)
+            if status:
+                return status
+
+    return None
+
+
+def _status_from_change_container(value: Any) -> str | None:
+    if isinstance(value, Mapping):
+        for key, nested_value in value.items():
+            if _normalize_key(key) in STATUS_FIELDS:
+                status = _status_value_from_change(nested_value)
+                if status:
+                    return status
+            if isinstance(nested_value, Mapping) and _normalize_key(
+                nested_value.get("field") or nested_value.get("fieldName")
+            ) in STATUS_FIELDS:
+                status = _status_value_from_change(nested_value)
+                if status:
+                    return status
+
+            status = _status_from_change_container(nested_value)
+            if status:
+                return status
+    elif isinstance(value, list):
+        for item in value:
+            status = _status_from_change_container(item)
             if status:
                 return status
 
