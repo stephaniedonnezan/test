@@ -76,16 +76,17 @@ def _is_status_change_event(contexts: list[Mapping[str, Any]]) -> bool:
         "workflow state changed",
     }
     issue_update_events = {"update", "updated", "issue updated", "updated issue"}
+    has_status_field_update = any(_updated_status_fields(context) for context in contexts)
 
     for context in contexts:
         for field in trigger_fields:
             normalized = _normalize_words(context.get(field))
             if normalized in direct_status_events:
                 return True
-            if normalized in issue_update_events and _updated_status_fields(context):
+            if normalized in issue_update_events and has_status_field_update:
                 return True
 
-        if _updated_status_fields(context) and (
+        if has_status_field_update and (
             _extract_status([context]) is not None or _changed_status_value(context) is not None
         ):
             return True
