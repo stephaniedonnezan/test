@@ -19,7 +19,7 @@ Cursor researching - Example
 ## Usage
 
 ```bash
-python linear_title_prefix.py --input payload.json
+python3 linear_title_prefix.py --input payload.json
 ```
 
 The command prints JSON:
@@ -34,5 +34,5 @@ title already contains the marker, `updatedTitle` is `null`.
 ## Tests
 
 ```bash
-python -m unittest
+python3 -m unittest
 ```
