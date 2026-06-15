@@ -11,7 +11,7 @@ from typing import Any
 
 PREFIX = "Cursor researching"
 TARGET_STATUS = "to research"
-STATUS_FIELDS = {"status", "state", "workflowstate", "workflow status", "workflow_status"}
+STATUS_FIELDS = {"status", "state", "workflow state", "workflow status"}
 
 
 def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
