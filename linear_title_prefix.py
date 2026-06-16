@@ -122,8 +122,12 @@ def _is_status_change_event(mappings: list[Mapping[str, Any]]) -> bool:
         return _updated_fields_include_status(mappings)
 
     # Cursor automations may provide the changed status directly without a
-    # separate trigger name in test payloads.
-    return any(_first_text([mapping], ("newStatus", "new_status", "toStatus", "to_status")) for mapping in mappings)
+    # separate trigger name in test payloads. If an explicit non-status event is
+    # present, respect it and do not infer a status transition.
+    return not event_names and any(
+        _first_text([mapping], ("newStatus", "new_status", "toStatus", "to_status"))
+        for mapping in mappings
+    )
 
 
 def _updated_fields_include_status(mappings: list[Mapping[str, Any]]) -> bool:
