@@ -136,6 +136,24 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             "Cursor researching: Change mapping",
         )
 
+    def test_uses_current_issue_status_when_updated_from_has_previous_status(self):
+        event = {
+            "action": "update",
+            "updatedFrom": {"state": "Backlog"},
+            "data": {
+                "issue": {
+                    "identifier": "POI-6",
+                    "title": "Previous value payload",
+                    "state": {"name": "To Research"},
+                }
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event)["title"],
+            "Cursor researching: Previous value payload",
+        )
+
     def test_trims_issue_id_and_title(self):
         event = {
             "trigger": "status_changed",

@@ -163,7 +163,7 @@ def _changed_status(contexts: list[Mapping[str, Any]]) -> str | None:
 
 
 def _status_from_change_mapping(context: Mapping[str, Any]) -> str | None:
-    for container_key in ("changes", "updatedFrom", "updated_from", "previousValues"):
+    for container_key in ("changes",):
         container = context.get(container_key)
         if not isinstance(container, Mapping):
             continue
