@@ -23,7 +23,6 @@ STATUS_CHANGE_TRIGGERS = {
     "statuschange",
     "statusupdated",
     "statusupdate",
-    "statuschanged",
 }
 GENERIC_UPDATE_TRIGGERS = {
     "update",
@@ -101,8 +100,9 @@ def _is_status_change_event(payload: Mapping[str, Any]) -> bool:
     if updated_fields and any(field in STATUS_FIELDS for field in updated_fields):
         return True
 
-    # Cursor's automation trigger sends a specific trigger plus newStatus.
-    if _extract_new_status(payload) is not None and "newstatus" in {
+    # Some Cursor automation payloads contain only newStatus plus issue data.
+    # Do not use this fallback when an explicit non-status marker is present.
+    if not markers and _extract_new_status(payload) is not None and "newstatus" in {
         _normalize_key(key) for key in payload.keys()
     }:
         return True
