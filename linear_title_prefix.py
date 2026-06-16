@@ -103,13 +103,32 @@ def _is_status_change_event(payload: Mapping[str, Any]) -> bool:
         return True
 
     if event_names & GENERIC_UPDATE_EVENT_NAMES:
-        return _mentions_status_field(payload)
+        if _has_change_field_marker(payload):
+            return _change_markers_mention_status(payload)
+        return _has_status_value(payload)
+
+    if event_names:
+        return False
 
     # Cursor test harnesses sometimes provide only the newStatus and issue data.
-    return bool(_changed_status_name(payload)) and _mentions_status_field(payload)
+    return bool(_changed_status_name(payload)) and _has_status_value(payload)
 
 
-def _mentions_status_field(payload: Mapping[str, Any]) -> bool:
+def _has_change_field_marker(payload: Mapping[str, Any]) -> bool:
+    return any(
+        key in payload
+        for key in (
+            "updatedFields",
+            "updatedFieldIds",
+            "changedFields",
+            "changes",
+            "updatedFrom",
+            "previousValues",
+        )
+    )
+
+
+def _change_markers_mention_status(payload: Mapping[str, Any]) -> bool:
     for key in ("updatedFields", "updatedFieldIds", "changedFields"):
         if _sequence_mentions_status(payload.get(key)):
             return True
@@ -119,6 +138,10 @@ def _mentions_status_field(payload: Mapping[str, Any]) -> bool:
         if isinstance(value, Mapping) and any(_is_status_field_name(name) for name in value):
             return True
 
+    return False
+
+
+def _has_status_value(payload: Mapping[str, Any]) -> bool:
     return any(key in payload for key in ("newStatus", "new_status", "status", "state", "workflowState"))
 
 
