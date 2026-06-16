@@ -15,12 +15,15 @@ STATUS_FIELDS = {
     "status_name",
     "statusname",
     "state",
+    "state_id",
     "state_name",
     "statename",
     "workflow_state",
+    "workflow_state_id",
     "workflowstate",
     "workflow_state_name",
     "workflowstatename",
+    "status_id",
 }
 
 
