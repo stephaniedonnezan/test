@@ -88,16 +88,10 @@ def _new_status(contexts: list[Mapping[str, Any]]) -> str | None:
             "new_state",
             "newWorkflowState",
             "new_workflow_state",
-            "status",
         ),
     )
     if status:
         return status
-
-    for key in ("state", "workflowState"):
-        nested_status = _first_nested_text(contexts, key, ("name", "title"))
-        if nested_status:
-            return nested_status
 
     for change in _changes(contexts):
         if not _is_status_field(change.get("field") or change.get("fieldName") or change.get("key")):
@@ -107,7 +101,12 @@ def _new_status(contexts: list[Mapping[str, Any]]) -> str | None:
         if text:
             return text
 
-    return None
+    for key in ("state", "workflowState"):
+        nested_status = _first_nested_text(contexts, key, ("name", "title"))
+        if nested_status:
+            return nested_status
+
+    return _first_text(contexts, ("status",))
 
 
 def _has_direct_status_trigger(contexts: list[Mapping[str, Any]]) -> bool:

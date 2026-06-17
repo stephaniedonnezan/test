@@ -88,6 +88,28 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_change_record_takes_precedence_over_stale_status(self):
+        event = {
+            "action": "update",
+            "status": "Todo",
+            "changes": [
+                {"field": "status", "to": "To Research"},
+            ],
+            "issue": {
+                "identifier": "POI-4974",
+                "title": "User removal flow",
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4974",
+                "title": "Cursor researching: User removal flow",
+            },
+        )
+
     def test_case_and_separator_variants_are_normalized(self):
         event = {
             "trigger": "statusChanged",
