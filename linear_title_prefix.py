@@ -60,14 +60,22 @@ def _is_status_change_event(event: Mapping[str, Any]) -> bool:
 
 
 def _mentions_status_field(event: Mapping[str, Any]) -> bool:
-    if any(_normalized_field(field) in STATUS_FIELDS for field in _updated_fields(event)):
-        return True
+    saw_updated_fields = False
+    for field in _updated_fields(event):
+        saw_updated_fields = True
+        if _normalized_field(field) in STATUS_FIELDS:
+            return True
 
+    saw_changes = False
     for context in _context_mappings(event):
         changes = context.get("changes") or context.get("changedFields")
         if isinstance(changes, Mapping):
+            saw_changes = True
             if any(_normalized_field(field) in STATUS_FIELDS for field in changes):
                 return True
+
+    if saw_updated_fields or saw_changes:
+        return False
 
     return any(
         context.get(key) is not None
