@@ -88,6 +88,7 @@ def _candidate_contexts(event: Mapping[str, Any]) -> Iterable[Mapping[str, Any]]
 
 def _is_status_change(contexts: Iterable[Mapping[str, Any]]) -> bool:
     contexts = list(contexts)
+    has_non_status_trigger = False
 
     for context in contexts:
         for key in ("trigger", "event", "eventType", "webhookType", "action", "type"):
@@ -101,12 +102,18 @@ def _is_status_change(contexts: Iterable[Mapping[str, Any]]) -> bool:
                 "workflow state change",
             }:
                 return True
+            if normalized and normalized not in {"linear", "issue", "update", "updated"}:
+                has_non_status_trigger = True
 
     if _has_changed_status_field(contexts):
         return True
 
     # A dedicated "new status" field is only present on status transition
-    # payloads in Cursor automations.
+    # payloads in Cursor automations. Do not let it override an explicit
+    # non-status trigger such as comment_created.
+    if has_non_status_trigger:
+        return False
+
     return any(
         _first_text((context,), ("newStatus", "new_status", "newState", "new_state"))
         for context in contexts
@@ -138,6 +145,9 @@ def _has_changed_status_field(contexts: Iterable[Mapping[str, Any]]) -> bool:
 def _contains_status_field(value: Any) -> bool:
     if isinstance(value, str):
         return _normalize_key(value) in _STATUS_FIELD_NAMES
+    if isinstance(value, Mapping):
+        field_name = _first_text((value,), ("field", "fieldName", "name", "key"))
+        return bool(field_name and _normalize_key(field_name) in _STATUS_FIELD_NAMES)
     if isinstance(value, Iterable) and not isinstance(value, (str, bytes, Mapping)):
         return any(_contains_status_field(item) for item in value)
     return False
