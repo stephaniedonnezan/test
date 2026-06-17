@@ -115,7 +115,7 @@ def _has_status_field_update(value: Any) -> bool:
                     return True
             if isinstance(nested, (Mapping, list, tuple)) and _has_status_field_update(nested):
                 return True
-    elif isinstance(value, list | tuple):
+    elif isinstance(value, (list, tuple)):
         return any(_has_status_field_update(item) for item in value)
     return False
 
@@ -131,7 +131,7 @@ def _contains_status_field(value: Any) -> bool:
                 return True
             if isinstance(nested, (Mapping, list, tuple)) and _contains_status_field(nested):
                 return True
-    if isinstance(value, list | tuple):
+    if isinstance(value, (list, tuple)):
         return any(_contains_status_field(item) for item in value)
     return False
 
@@ -182,7 +182,7 @@ def _status_from_changes(value: Any) -> str | None:
                 status = _status_from_changes(nested)
                 if status is not None:
                     return status
-    elif isinstance(value, list | tuple):
+    elif isinstance(value, (list, tuple)):
         for item in value:
             status = _status_from_changes(item)
             if status is not None:
