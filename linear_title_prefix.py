@@ -55,7 +55,7 @@ _STATUS_FIELD_ORDER = (
     "workflowStateName",
     "workflow_state_name",
 )
-_STATUS_CHANGE_FIELDS = {"status", "state", "workflowstate", "workflowState"}
+_STATUS_CHANGE_FIELDS = {"status", "statusid", "state", "stateid", "workflowstate", "workflowstateid"}
 _TITLE_FIELDS = ("title", "name", "issueTitle")
 _ISSUE_ID_FIELDS = ("issueId", "issue_id", "identifier", "key", "id")
 

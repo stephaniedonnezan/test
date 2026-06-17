@@ -98,6 +98,27 @@ class LinearTitlePrefixTest(unittest.TestCase):
             },
         )
 
+    def test_handles_linear_update_payload_with_state_id_change(self):
+        event = {
+            "action": "update",
+            "type": "Issue",
+            "updatedFrom": {"stateId": "old-state"},
+            "data": {
+                "identifier": "POI-5014",
+                "title": "Wrong font on Add input dialog",
+                "state": {"name": "To Research"},
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-5014",
+                "title": "Cursor researching: Wrong font on Add input dialog",
+            },
+        )
+
     def test_requires_issue_id_and_title(self):
         event = {
             "trigger": "status_changed",
