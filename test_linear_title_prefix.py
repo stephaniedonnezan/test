@@ -124,6 +124,25 @@ class BuildIssueTitleUpdateTests(unittest.TestCase):
             },
         )
 
+    def test_prefixes_object_shaped_updated_fields(self):
+        payload = {
+            "action": "update",
+            "updatedFields": [{"name": "workflowState", "newValue": "To Research"}],
+            "data": {
+                "identifier": "POI-5031",
+                "title": "Improve performance of timeZoneObject()",
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(payload),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-5031",
+                "title": "Cursor researching: Improve performance of timeZoneObject()",
+            },
+        )
+
     def test_ignores_generic_issue_update_without_status_marker(self):
         payload = {
             "action": "update",

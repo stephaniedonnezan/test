@@ -124,7 +124,10 @@ def _field_collection_mentions_status(value: Any) -> bool:
     if isinstance(value, str):
         return _is_status_field_name(value)
     if isinstance(value, Mapping):
-        return any(_is_status_field_name(key) for key in value)
+        field_name = _first_text_from_mapping(value, ("field", "fieldName", "name", "property", "key"))
+        return (field_name is not None and _is_status_field_name(field_name)) or any(
+            _is_status_field_name(key) for key in value
+        )
     if isinstance(value, Iterable):
         return any(_field_collection_mentions_status(item) for item in value)
     return False
