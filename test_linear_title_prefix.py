@@ -113,6 +113,31 @@ class LinearTitlePrefixTests(unittest.TestCase):
             },
         )
 
+    def test_changes_object_new_status_wins_over_generic_status(self):
+        event = {
+            "action": "update",
+            "status": "Backlog",
+            "data": {
+                "identifier": "POI-132",
+                "title": "Issue with stale top-level status",
+            },
+            "changes": {
+                "state": {
+                    "oldValue": {"name": "Backlog"},
+                    "newValue": {"name": "To Research"},
+                }
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-132",
+                "title": "Cursor researching: Issue with stale top-level status",
+            },
+        )
+
     def test_accepts_updated_from_state_with_current_state_name(self):
         event = {
             "action": "update",

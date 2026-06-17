@@ -111,12 +111,11 @@ def _new_status(contexts: list[Mapping[str, Any]]) -> Any:
     )
     status_keys = ("status", "state", "workflowState")
 
-    for key_group in (explicit_keys, status_keys):
-        for context in contexts:
-            for key in key_group:
-                value = _extract_name(context.get(key))
-                if value:
-                    return value
+    for context in contexts:
+        for key in explicit_keys:
+            value = _extract_name(context.get(key))
+            if value:
+                return value
 
     for context in contexts:
         changes = context.get("changes")
@@ -125,6 +124,12 @@ def _new_status(contexts: list[Mapping[str, Any]]) -> Any:
                 value = _changed_to_value(changes.get(key))
                 if value:
                     return value
+
+    for context in contexts:
+        for key in status_keys:
+            value = _extract_name(context.get(key))
+            if value:
+                return value
 
     return None
 
