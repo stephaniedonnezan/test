@@ -73,7 +73,7 @@ def _is_status_change_event(event: Mapping[str, Any]) -> bool:
         return True
 
     if trigger_names & _GENERIC_UPDATE_TRIGGERS:
-        return _has_status_change_metadata(event) or _new_status(event) is not None
+        return _has_status_change_metadata(event) or _has_explicit_new_status(event)
 
     return False
 
@@ -120,6 +120,21 @@ def _new_status(event: Mapping[str, Any]) -> Any:
             return _name_like_value(value)
 
     return None
+
+
+def _has_explicit_new_status(event: Mapping[str, Any]) -> bool:
+    explicit_keys = (
+        "newStatus",
+        "new_status",
+        "newState",
+        "new_state",
+        "newWorkflowState",
+        "new_workflow_state",
+        "statusName",
+        "stateName",
+        "workflowStateName",
+    )
+    return _first_value(_all_sources(event), explicit_keys) is not None
 
 
 def _status_from_change_maps(event: Mapping[str, Any]) -> Any:
