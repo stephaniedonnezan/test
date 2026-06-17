@@ -104,11 +104,13 @@ def _is_status_change_event(contexts: list[Mapping[str, Any]]) -> bool:
     if event_names & _DIRECT_STATUS_CHANGE_EVENTS:
         return True
 
-    if _has_explicit_new_status(contexts):
-        return True
-
     if event_names & _GENERIC_UPDATE_EVENTS:
-        return _updated_fields_include_status(contexts)
+        return _updated_fields_include_status(contexts) or _has_explicit_new_status(
+            contexts
+        )
+
+    if not event_names and _has_explicit_new_status(contexts):
+        return True
 
     return False
 
