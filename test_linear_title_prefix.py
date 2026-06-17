@@ -103,6 +103,26 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             "Cursor researching: Timezone selector acts as filter",
         )
 
+    def test_change_target_takes_priority_over_stale_status_field(self):
+        payload = {
+            "action": "update",
+            "type": "Issue",
+            "status": "Backlog",
+            "changes": {
+                "status": {
+                    "from": {"name": "Backlog"},
+                    "to": {"name": "To Research"},
+                }
+            },
+            "id": "POI-5001",
+            "title": "Timezone selector acts as filter",
+        }
+
+        self.assertEqual(
+            build_issue_title_update(payload)["title"],
+            "Cursor researching: Timezone selector acts as filter",
+        )
+
     def test_ignores_status_changes_to_other_statuses(self):
         payload = {
             "trigger": "status_changed",

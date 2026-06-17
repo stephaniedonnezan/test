@@ -143,10 +143,6 @@ def _find_new_status(contexts: Iterable[Mapping[str, Any]]) -> str | None:
                 "new_status",
                 "toStatus",
                 "to_status",
-                "status",
-                "state",
-                "workflowState",
-                "workflow_state",
             ),
         )
         if status:
@@ -154,6 +150,19 @@ def _find_new_status(contexts: Iterable[Mapping[str, Any]]) -> str | None:
 
     for context in contexts:
         status = _status_from_change_sets(context)
+        if status:
+            return status
+
+    for context in contexts:
+        status = _status_from_explicit_keys(
+            context,
+            (
+                "status",
+                "state",
+                "workflowState",
+                "workflow_state",
+            ),
+        )
         if status:
             return status
 
