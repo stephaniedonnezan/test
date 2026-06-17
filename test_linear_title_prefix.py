@@ -66,6 +66,28 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_accepts_workflow_state_updated_field(self):
+        event = {
+            "action": "update",
+            "updatedFields": ["workflowState"],
+            "data": {
+                "issue": {
+                    "identifier": "POI-5033",
+                    "title": "CO2 inputs optional proof file",
+                    "workflowState": {"name": "To Research"},
+                }
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-5033",
+                "title": "Cursor researching: CO2 inputs optional proof file",
+            },
+        )
+
     def test_accepts_camel_case_status_and_trigger_values(self):
         event = {
             "trigger": "statusChanged",
