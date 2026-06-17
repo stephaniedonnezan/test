@@ -124,6 +124,18 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             )
         )
 
+    def test_does_not_use_status_name_as_title(self):
+        result = build_issue_title_update(
+            {
+                "trigger": "status_changed",
+                "newStatus": "to research",
+                "id": "POI-5010",
+                "state": {"name": "To Research"},
+            }
+        )
+
+        self.assertIsNone(result)
+
     def test_cli_prints_update_action(self):
         payload = {
             "trigger": "status_changed",
