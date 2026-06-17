@@ -11,7 +11,13 @@ from typing import Any
 
 TITLE_PREFIX = "Cursor researching"
 TARGET_STATUS = "to research"
-STATUS_FIELD_NAMES = {"status", "state", "workflowstate", "workflowstatus"}
+STATUS_VALUE_FIELD_NAMES = {"status", "state", "workflowstate", "workflowstatus"}
+STATUS_CHANGE_FIELD_NAMES = STATUS_VALUE_FIELD_NAMES | {
+    "statusid",
+    "stateid",
+    "workflowstateid",
+    "workflowstatusid",
+}
 DIRECT_STATUS_TRIGGERS = {
     "statuschanged",
     "statuschange",
@@ -106,7 +112,11 @@ def _iterable_mentions_status_field(value: Any) -> bool:
 
 
 def _is_status_field_name(value: Any) -> bool:
-    return _normalize_token(value) in STATUS_FIELD_NAMES
+    return _normalize_token(value) in STATUS_CHANGE_FIELD_NAMES
+
+
+def _is_status_value_field_name(value: Any) -> bool:
+    return _normalize_token(value) in STATUS_VALUE_FIELD_NAMES
 
 
 def _extract_new_status(event: Mapping[str, Any]) -> str | None:
@@ -147,7 +157,7 @@ def _extract_new_status(event: Mapping[str, Any]) -> str | None:
 
 def _status_from_changes(changes: Mapping[str, Any]) -> str | None:
     for field, value in changes.items():
-        if not _is_status_field_name(field):
+        if not _is_status_value_field_name(field):
             continue
 
         if isinstance(value, Mapping):
