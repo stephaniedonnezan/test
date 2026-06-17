@@ -148,7 +148,7 @@ def _extract_new_status(event: Mapping[str, Any]) -> Any:
 
 def _coerce_status_value(value: Any) -> Any:
     if isinstance(value, Mapping):
-        for key in ("name", "title", "label", "status", "state"):
+        for key in ("name", "title", "label", "to", "after", "new", "status", "state"):
             if key in value:
                 return _coerce_status_value(value[key])
     return value
