@@ -28,6 +28,7 @@ _EXPLICIT_STATUS_KEYS = (
     "workflow_state_name",
 )
 _CURRENT_STATUS_KEYS = ("status", "state", "workflowState", "workflow_state")
+_CHANGED_STATUS_VALUE_KEYS = ("newValue", "new_value", "to", "after", "name", "value")
 _ISSUE_ID_KEYS = ("issueId", "issue_id", "identifier", "key", "id")
 _ISSUE_TITLE_KEYS = ("title", "name")
 _STATUS_CHANGE_KEYS = ("updatedFields", "changedFields", "changes", "updatedFrom")
@@ -113,7 +114,13 @@ def _has_status_change_metadata(context: Mapping[str, Any]) -> bool:
 
 def _contains_status_field(value: Any) -> bool:
     if isinstance(value, Mapping):
-        return any(_looks_like_status_field(key) for key in value)
+        if any(_looks_like_status_field(key) for key in value):
+            return True
+
+        return any(
+            _looks_like_status_field(value.get(key))
+            for key in ("field", "fieldName", "field_name", "name", "key")
+        )
 
     if isinstance(value, str):
         return _looks_like_status_field(value)
@@ -142,7 +149,44 @@ def _first_status(contexts: Iterable[Mapping[str, Any]]) -> str | None:
     if explicit:
         return explicit
 
+    changed = _first_changed_status(contexts)
+    if changed:
+        return changed
+
     return _first_text(contexts, _CURRENT_STATUS_KEYS)
+
+
+def _first_changed_status(contexts: Iterable[Mapping[str, Any]]) -> str | None:
+    for context in contexts:
+        for key in ("changes", "changedFields"):
+            status = _status_from_change(context.get(key))
+            if status:
+                return status
+    return None
+
+
+def _status_from_change(value: Any) -> str | None:
+    if isinstance(value, Mapping):
+        for field, change in value.items():
+            if _looks_like_status_field(field):
+                return _first_text([change], _CHANGED_STATUS_VALUE_KEYS) or _extract_text(change)
+        return None
+
+    if isinstance(value, str):
+        return None
+
+    if isinstance(value, Iterable):
+        for item in value:
+            if not isinstance(item, Mapping):
+                continue
+
+            field = _first_text([item], ("field", "fieldName", "field_name", "key", "name"))
+            if _looks_like_status_field(field):
+                status = _first_text([item], _CHANGED_STATUS_VALUE_KEYS)
+                if status:
+                    return status
+
+    return None
 
 
 def _first_text(contexts: Iterable[Mapping[str, Any]], keys: Iterable[str]) -> str | None:

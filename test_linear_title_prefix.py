@@ -86,6 +86,26 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_supports_status_value_from_changes_metadata(self):
+        event = {
+            "action": "Issue Updated",
+            "changes": {"status": {"oldValue": "Todo", "newValue": "To Research"}},
+            "data": {
+                "id": "POI-790",
+                "title": "Research issuer permissions",
+                "status": {"name": "Todo"},
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-790",
+                "title": "Cursor researching: Research issuer permissions",
+            },
+        )
+
     def test_ignores_non_research_status(self):
         event = {
             "trigger": "status_changed",
