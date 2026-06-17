@@ -42,7 +42,7 @@ def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
     if _normalize_words(status) != TARGET_STATUS:
         return None
 
-    issue_id = _first_string(context, ("id", "issueId", "issue_id", "identifier", "key"))
+    issue_id = _first_string(context, ("issueId", "issue_id", "identifier", "key", "id"))
     title = _first_string(context, ("title", "name"))
     if issue_id is None or title is None:
         return None
