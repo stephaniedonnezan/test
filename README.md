@@ -9,5 +9,5 @@ change moves the issue to `to research`. Matching updates add the
 Run the focused tests with:
 
 ```sh
-python -m unittest
+python3 -m unittest
 ```
