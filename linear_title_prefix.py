@@ -50,7 +50,7 @@ def build_issue_title_update(event: Mapping[str, Any] | None) -> dict[str, str] 
 
     issue_id = _find_text(
         contexts,
-        ("issueId", "issue_id", "identifier", "key", "id"),
+        ("issueId", "issue_id", "id", "identifier", "key"),
     )
     title = _find_text(contexts, ("title", "name"))
     if not issue_id or not title:
