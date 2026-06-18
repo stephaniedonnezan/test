@@ -94,6 +94,7 @@ def _candidate_contexts(event: Mapping[str, Any]) -> list[Mapping[str, Any]]:
 
 def _is_status_change_event(contexts: Iterable[Mapping[str, Any]]) -> bool:
     saw_issue_update = False
+    saw_update_field_metadata = False
 
     for context in contexts:
         for key in ("trigger", "webhookType", "action", "type", "eventType"):
@@ -105,8 +106,17 @@ def _is_status_change_event(contexts: Iterable[Mapping[str, Any]]) -> bool:
 
         if _updated_fields_include_status(context):
             return True
+        if _has_update_field_metadata(context):
+            saw_update_field_metadata = True
+
+    if saw_update_field_metadata:
+        return False
 
     return saw_issue_update and any(_has_status_change_details(context) for context in contexts)
+
+
+def _has_update_field_metadata(context: Mapping[str, Any]) -> bool:
+    return any(key in context for key in ("updatedFields", "changedFields", "changes"))
 
 
 def _updated_fields_include_status(context: Mapping[str, Any]) -> bool:
