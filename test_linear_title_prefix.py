@@ -150,6 +150,23 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_single_change_object_new_status(self):
+        event = {
+            "action": "update",
+            "changes": {"field": "state", "to": "To Research"},
+            "identifier": "POI-12",
+            "title": "Single change object",
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-12",
+                "title": "Cursor researching: Single change object",
+            },
+        )
+
     def test_trims_issue_id_and_title(self):
         event = {
             "trigger": "status_changed",

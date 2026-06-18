@@ -41,7 +41,6 @@ _STATUS_FIELD_NAMES = {
     "stateid",
     "workflowstate",
     "workflowstateid",
-    "workflowstateid",
 }
 
 
@@ -117,7 +116,10 @@ def _is_status_change_event(
     if any(name in {"statuschanged", "statuschange"} for name in event_names):
         return True
 
-    has_update_event = any(name in {"update", "updated", "issueupdated", "updatedissue"} for name in event_names)
+    has_update_event = any(
+        name in {"update", "updated", "issueupdated", "updatedissue"}
+        for name in event_names
+    )
     if has_update_event and _has_status_change_metadata(event, sources):
         return True
 
@@ -134,15 +136,10 @@ def _has_status_change_metadata(
             if _contains_status_field(source.get(key)):
                 return True
 
-    changes = event.get("changes")
-    if _contains_status_field(changes):
-        return True
-
-    if isinstance(changes, Mapping):
-        return any(_is_status_field(field) for field in changes)
-
-    if _is_sequence(changes):
-        return any(_change_record_is_status_related(change) for change in changes)
+    for source in sources:
+        changes = source.get("changes")
+        if _changes_include_status(changes):
+            return True
 
     return False
 
@@ -156,9 +153,10 @@ def _status_from_event(
             if status:
                 return status
 
-    changed_status = _status_from_changes(event.get("changes"))
-    if changed_status:
-        return changed_status
+    for source in sources:
+        changed_status = _status_from_changes(source.get("changes"))
+        if changed_status:
+            return changed_status
 
     for source in sources:
         for key in ("status", "state", "workflowState", "workflow_state"):
@@ -171,6 +169,11 @@ def _status_from_event(
 
 def _status_from_changes(changes: Any) -> str | None:
     if isinstance(changes, Mapping):
+        if _change_record_is_status_related(changes):
+            status = _new_value_from_change(changes)
+            if status:
+                return status
+
         for field, change in changes.items():
             if _is_status_field(field):
                 status = _new_value_from_change(change)
@@ -186,6 +189,19 @@ def _status_from_changes(changes: Any) -> str | None:
                 return status
 
     return None
+
+
+def _changes_include_status(changes: Any) -> bool:
+    if _contains_status_field(changes):
+        return True
+
+    if isinstance(changes, Mapping):
+        return _change_record_is_status_related(changes)
+
+    if _is_sequence(changes):
+        return any(_change_record_is_status_related(change) for change in changes)
+
+    return False
 
 
 def _new_value_from_change(change: Any) -> str | None:
