@@ -58,6 +58,9 @@ def _is_status_change_event(event: Mapping[str, Any]) -> bool:
     if triggers & UPDATE_TRIGGERS:
         return _changed_status_fields(event)
 
+    if triggers:
+        return False
+
     # Cursor's status-change automation payload can be represented only through
     # explicit old/new status fields.
     return any(
