@@ -167,7 +167,8 @@ def _direct_values(context: Mapping[str, Any], keys: Iterable[str]) -> Iterable[
 def _normalize(value: Any) -> str | None:
     if value is None:
         return None
-    words = re.sub(r"[_-]+", " ", str(value)).strip().lower()
+    camel_spaced = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", str(value))
+    words = re.sub(r"[_-]+", " ", camel_spaced).strip().lower()
     return re.sub(r"\s+", " ", words)
 
 
