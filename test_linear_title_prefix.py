@@ -110,6 +110,28 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_changed_status_value_overrides_stale_current_state(self):
+        event = {
+            "action": "update",
+            "changes": {"state": {"from": "Todo", "to": "To Research"}},
+            "data": {
+                "issue": {
+                    "identifier": "POI-10",
+                    "title": "Changed status wins",
+                    "state": {"name": "Todo"},
+                }
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-10",
+                "title": "Cursor researching: Changed status wins",
+            },
+        )
+
     def test_does_not_duplicate_existing_prefix(self):
         event = {
             "trigger": "status_changed",

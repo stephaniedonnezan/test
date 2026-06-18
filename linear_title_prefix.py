@@ -151,7 +151,7 @@ def _status_field_changed(payload: Mapping[str, Any]) -> bool:
 
 
 def _extract_status(payload: Mapping[str, Any]) -> Any:
-    for key in STATUS_VALUE_KEYS:
+    for key in ("newStatus", "new_status"):
         value = payload.get(key)
         status = _status_name(value)
         if status:
@@ -162,6 +162,12 @@ def _extract_status(payload: Mapping[str, Any]) -> Any:
         for key, value in changes.items():
             if _normalize_field_name(key) in STATUS_FIELD_NAMES:
                 return _status_name(_first_value(value, ("to", "new", "newValue", "new_value", "after"))) or value
+
+    for key in ("status", "state", "workflowState", "workflow_status"):
+        value = payload.get(key)
+        status = _status_name(value)
+        if status:
+            return status
 
     return None
 
