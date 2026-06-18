@@ -87,7 +87,7 @@ def _mentions_status_change(context: Mapping[str, Any]) -> bool:
 
     for key in ("changes", "changed", "updatedFrom", "updated_from"):
         value = context.get(key)
-        if isinstance(value, Mapping) and _contains_status_field(value.keys()):
+        if _contains_status_field(value):
             return True
 
     return any(key in context for key in ("newStatus", "new_status", "statusName", "stateName", "workflowStateName"))
@@ -129,6 +129,8 @@ def _status_from_change_mapping(changes: Mapping[str, Any]) -> Any:
         if isinstance(value, Mapping):
             for candidate in ("to", "new", "after", "newValue", "new_value", "name"):
                 if (status := value.get(candidate)) is not None:
+                    if isinstance(status, Mapping):
+                        return _first_value(status, ("name", "title", "label", "value", "id"))
                     return status
         return value
 
