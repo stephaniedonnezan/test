@@ -1,0 +1,13 @@
+{
+  "name": "linear-cursor-researching-title",
+  "version": "1.0.0",
+  "description": "Linear webhook helper that marks issues being researched by Cursor.",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED"
+}
