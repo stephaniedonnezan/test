@@ -121,6 +121,33 @@ class BuildIssueTitleUpdateTests(unittest.TestCase):
             },
         )
 
+    def test_changes_payload_takes_precedence_over_issue_state(self):
+        event = {
+            "webhookType": "Issue Updated",
+            "data": {
+                "issue": {
+                    "identifier": "POI-5065",
+                    "title": "UBA POS should not be modifiable",
+                    "state": {"name": "Todo"},
+                }
+            },
+            "changes": {
+                "state": {
+                    "old": {"name": "Backlog"},
+                    "new": {"name": "To Research"},
+                }
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-5065",
+                "title": "Cursor researching: UBA POS should not be modifiable",
+            },
+        )
+
     def test_ignores_issue_update_without_status_field_change(self):
         event = {
             "action": "update",

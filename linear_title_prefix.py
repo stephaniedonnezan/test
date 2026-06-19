@@ -117,10 +117,6 @@ def _extract_new_status(payload: Mapping[str, Any]) -> Any:
         "new_status",
         "toStatus",
         "to_status",
-        "status",
-        "state",
-        "workflowState",
-        "workflow_state",
     ):
         value = payload.get(key)
         if value is not None:
@@ -141,6 +137,11 @@ def _extract_new_status(payload: Mapping[str, Any]) -> Any:
                         or value.get("name")
                     )
                 return _status_name(value)
+
+    for key in ("status", "state", "workflowState", "workflow_state"):
+        value = payload.get(key)
+        if value is not None:
+            return _status_name(value)
 
     return None
 
