@@ -13,9 +13,13 @@ PREFIX = "Cursor researching"
 TARGET_STATUS = "to research"
 STATUS_FIELDS = {
     "status",
+    "statusid",
     "state",
+    "stateid",
     "workflowstate",
+    "workflowstateid",
     "workflowstatus",
+    "workflowstatusid",
 }
 TRIGGER_FIELDS = ("trigger", "webhookType", "action", "type")
 ISSUE_ID_FIELDS = ("issueId", "issue_id", "identifier", "key", "id")

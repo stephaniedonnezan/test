@@ -107,6 +107,29 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_supports_linear_state_id_update_field(self):
+        event = {
+            "action": "update",
+            "type": "Issue",
+            "data": {
+                "issue": {
+                    "identifier": "POI-10",
+                    "title": "Investigate state id update",
+                    "state": {"name": "To Research"},
+                },
+                "updatedFields": ["stateId"],
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-10",
+                "title": "Cursor researching: Investigate state id update",
+            },
+        )
+
     def test_ignores_generic_update_without_status_field_change(self):
         event = {
             "action": "update",
