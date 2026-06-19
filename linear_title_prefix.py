@@ -79,6 +79,8 @@ def _issue_context(event: Mapping[str, Any]) -> dict[str, Any]:
 
         nested_issue = data.get("issue")
         if isinstance(nested_issue, Mapping):
+            if _first_text(nested_issue, _ISSUE_ID_FIELDS):
+                _clear_issue_id_fields(issue)
             _copy_issue_fields(issue, nested_issue)
 
     return issue
@@ -88,6 +90,11 @@ def _copy_issue_fields(target: dict[str, Any], source: Mapping[str, Any]) -> Non
     for field in _ISSUE_FIELDS:
         if field in source:
             target[field] = source[field]
+
+
+def _clear_issue_id_fields(target: dict[str, Any]) -> None:
+    for field in _ISSUE_ID_FIELDS:
+        target.pop(field, None)
 
 
 def _is_status_change(context: Mapping[str, Any]) -> bool:
