@@ -231,16 +231,27 @@ def _values_for_keys(
 def _first_string_value(
     contexts: Iterable[Mapping[str, Any]], keys: Iterable[str]
 ) -> str | None:
-    for value in _values_for_keys(contexts, keys):
-        if isinstance(value, Mapping):
-            value = _status_text(value)
+    normalized_keys = tuple((_normalize_key(key), key) for key in keys)
+    for context in contexts:
+        for normalized_key, _ in normalized_keys:
+            value = _value_for_normalized_key(context, normalized_key)
+            if value is None:
+                continue
 
-        if value is None:
-            continue
+            if isinstance(value, Mapping):
+                value = _status_text(value)
 
-        text = str(value).strip()
-        if text:
-            return text
+            text = str(value).strip()
+            if text:
+                return text
+
+    return None
+
+
+def _value_for_normalized_key(context: Mapping[str, Any], normalized_key: str) -> Any:
+    for key, value in context.items():
+        if _normalize_key(key) == normalized_key:
+            return value
 
     return None
 
