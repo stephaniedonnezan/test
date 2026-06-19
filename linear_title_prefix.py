@@ -158,11 +158,24 @@ def _extract_status(contexts: Iterable[Mapping[str, Any]]) -> str | None:
 
 
 def _extract_issue_id(contexts: Iterable[Mapping[str, Any]]) -> str | None:
-    return _extract_first_string(contexts, ("issueId", "issue_id", "identifier", "key", "id"))
+    return _extract_first_string(_issue_contexts(contexts), ("issueId", "issue_id", "identifier", "key", "id"))
 
 
 def _extract_title(contexts: Iterable[Mapping[str, Any]]) -> str | None:
-    return _extract_first_string(contexts, ("title", "name"))
+    return _extract_first_string(_issue_contexts(contexts), ("title", "name"))
+
+
+def _issue_contexts(contexts: Iterable[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+    issue_contexts: list[Mapping[str, Any]] = []
+    other_contexts: list[Mapping[str, Any]] = []
+
+    for context in contexts:
+        if any(key in context for key in ("title", "identifier", "issueId", "issue_id", "key")):
+            issue_contexts.append(context)
+        else:
+            other_contexts.append(context)
+
+    return issue_contexts + other_contexts
 
 
 def _extract_first_string(contexts: Iterable[Mapping[str, Any]], keys: Iterable[str]) -> str | None:

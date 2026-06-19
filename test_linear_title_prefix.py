@@ -111,6 +111,23 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_prefers_nested_issue_identifier_over_webhook_id(self):
+        event = {
+            "id": "webhook-event-id",
+            "action": "update",
+            "type": "Issue",
+            "updatedFrom": {"stateId": "old-state-id"},
+            "data": {
+                "issue": {
+                    "identifier": "POI-1357",
+                    "title": "Prefer issue identifiers",
+                    "state": {"name": "To Research"},
+                }
+            },
+        }
+
+        self.assertEqual(build_issue_title_update(event)["issueId"], "POI-1357")
+
     def test_ignores_generic_issue_updates_without_status_field_change(self):
         event = {
             "action": "update",
