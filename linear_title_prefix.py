@@ -17,7 +17,7 @@ from typing import Any
 PREFIX = "Cursor researching"
 TARGET_STATUS = "to research"
 
-_STATUS_FIELD_NAMES = {"status", "state", "workflowstate", "workflow status"}
+_STATUS_FIELD_NAMES = {"status", "state", "workflowstate", "workflow state", "workflow status"}
 _STATUS_TRIGGER_VALUES = {
     "status changed",
     "status updated",
@@ -25,6 +25,8 @@ _STATUS_TRIGGER_VALUES = {
     "state updated",
     "workflowstate changed",
     "workflowstate updated",
+    "workflow state changed",
+    "workflow state updated",
     "workflow status changed",
     "workflow status updated",
 }
