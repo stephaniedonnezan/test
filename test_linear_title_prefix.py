@@ -75,6 +75,7 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             "updatedFields": ["workflowState"],
             "issueId": "POI-4978",
             "title": "Invite email lacks Atmen branding",
+            "status": "Todo",
             "changes": {
                 "workflowState": {
                     "from": {"name": "Todo"},

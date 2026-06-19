@@ -119,16 +119,7 @@ def _mentions_status_field(context: Mapping[str, Any]) -> bool:
 
 
 def _status_from_change(context: Mapping[str, Any]) -> Any:
-    for key in (
-        "newStatus",
-        "new_status",
-        "toStatus",
-        "to_status",
-        "status",
-        "state",
-        "workflowState",
-        "workflow_state",
-    ):
+    for key in ("newStatus", "new_status", "toStatus", "to_status"):
         value = context.get(key)
         status = _status_name(value)
         if status is not None:
@@ -140,6 +131,12 @@ def _status_from_change(context: Mapping[str, Any]) -> Any:
             status = _status_name(_changed_to_value(changes.get(key)))
             if status is not None:
                 return status
+
+    for key in ("status", "state", "workflowState", "workflow_state"):
+        value = context.get(key)
+        status = _status_name(value)
+        if status is not None:
+            return status
 
     return None
 
