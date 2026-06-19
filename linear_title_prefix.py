@@ -153,10 +153,11 @@ def _mapping_at(mapping: Mapping[str, Any] | None, key: str) -> Mapping[str, Any
 
 
 def _value_for_any_key(mapping: Mapping[str, Any], keys: Iterable[str]) -> Any:
-    wanted = {_normalize(key) for key in keys}
-    for key, value in mapping.items():
-        if _normalize(key) in wanted:
-            return value
+    normalized_items = [(_normalize(key), value) for key, value in mapping.items()]
+    for wanted_key in (_normalize(key) for key in keys):
+        for actual_key, value in normalized_items:
+            if actual_key == wanted_key:
+                return value
     return None
 
 
