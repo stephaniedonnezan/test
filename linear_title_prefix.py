@@ -109,7 +109,11 @@ def _status_change_indicated(*containers: Mapping[str, Any]) -> bool:
             if _normalize_trigger(value) in _STATUS_CHANGE_TRIGGERS:
                 return True
 
-        if any(container.get(key) is not None for key in ("newStatus", "newState", "newWorkflowState")):
+        has_explicit_trigger = container.get("trigger") is not None
+        if (
+            not has_explicit_trigger
+            and any(container.get(key) is not None for key in ("newStatus", "newState", "newWorkflowState"))
+        ):
             return True
 
         for key in ("field", "fieldName", "changedField"):
