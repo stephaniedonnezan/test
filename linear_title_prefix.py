@@ -117,18 +117,24 @@ def _candidate_mappings(event: Mapping[str, Any]) -> list[Mapping[str, Any]]:
 
 
 def _is_status_change_event(candidates: Iterable[Mapping[str, Any]]) -> bool:
+    has_event_marker = False
+    has_explicit_new_status = False
+
     for mapping in candidates:
         for key in _TRIGGER_KEYS:
-            if _is_direct_status_change_trigger(mapping.get(key)):
+            value = mapping.get(key)
+            if _text_from_value(value) is not None:
+                has_event_marker = True
+            if _is_direct_status_change_trigger(value):
                 return True
 
         if _has_updated_status_field(mapping):
             return True
 
         if any(_text_from_value(mapping.get(key)) is not None for key in _EXPLICIT_NEW_STATUS_KEYS):
-            return True
+            has_explicit_new_status = True
 
-    return False
+    return has_explicit_new_status and not has_event_marker
 
 
 def _is_direct_status_change_trigger(value: Any) -> bool:
