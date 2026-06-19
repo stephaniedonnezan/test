@@ -15,6 +15,7 @@ TARGET_STATUS = "to research"
 _STATUS_FIELDS = ("newStatus", "new_status", "status", "state", "workflowState")
 _ISSUE_ID_FIELDS = ("issueId", "issue_id", "id", "identifier", "key")
 _TITLE_FIELDS = ("title", "name")
+_ISSUE_FIELDS = _STATUS_FIELDS + _ISSUE_ID_FIELDS + _TITLE_FIELDS
 
 
 def build_issue_title_update(event: Mapping[str, Any] | None) -> dict[str, str] | None:
@@ -66,19 +67,27 @@ def _trigger_context(event: Mapping[str, Any]) -> dict[str, Any]:
 def _issue_context(event: Mapping[str, Any]) -> dict[str, Any]:
     issue: dict[str, Any] = {}
 
+    _copy_issue_fields(issue, event)
+
     trigger_context = event.get("triggerContext")
     if isinstance(trigger_context, Mapping):
-        issue.update(trigger_context)
+        _copy_issue_fields(issue, trigger_context)
 
     data = event.get("data")
     if isinstance(data, Mapping):
+        _copy_issue_fields(issue, data)
+
         nested_issue = data.get("issue")
         if isinstance(nested_issue, Mapping):
-            issue.update(nested_issue)
-        issue.update({key: value for key, value in data.items() if key != "issue"})
+            _copy_issue_fields(issue, nested_issue)
 
-    issue.update(event)
     return issue
+
+
+def _copy_issue_fields(target: dict[str, Any], source: Mapping[str, Any]) -> None:
+    for field in _ISSUE_FIELDS:
+        if field in source:
+            target[field] = source[field]
 
 
 def _is_status_change(context: Mapping[str, Any]) -> bool:

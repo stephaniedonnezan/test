@@ -95,6 +95,29 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_nested_issue_identifier_wins_over_top_level_webhook_id(self):
+        event = {
+            "id": "webhook-event-id",
+            "action": "update",
+            "updatedFields": ["state"],
+            "data": {
+                "issue": {
+                    "identifier": "POI-4766",
+                    "title": "Think about the delivery-centric approach",
+                    "state": {"name": "To Research"},
+                }
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4766",
+                "title": "Cursor researching: Think about the delivery-centric approach",
+            },
+        )
+
     def test_cli_prints_update_action(self):
         event = {
             "trigger": "status_changed",
