@@ -110,10 +110,7 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             "title": "cursor researching: CO2 inputs optional proof file",
         }
 
-        self.assertEqual(
-            build_issue_title_update(event)["title"],
-            "cursor researching: CO2 inputs optional proof file",
-        )
+        self.assertIsNone(build_issue_title_update(event))
 
     def test_other_status_is_ignored(self):
         event = {

@@ -64,6 +64,8 @@ def build_issue_title_update(event: Mapping[str, Any] | None) -> dict[str, str] 
     title = _extract_title(contexts)
     if not issue_id or not title:
         return None
+    if _has_title_prefix(title):
+        return None
 
     return {
         "action": "update_issue_title",
@@ -279,9 +281,11 @@ def _first_text_from_value(value: Any, nested_keys: tuple[str, ...]) -> str | No
 
 def _prefixed_title(title: str) -> str:
     title = title.strip()
-    if title.lower().startswith(TITLE_PREFIX.lower()):
-        return title
     return f"{TITLE_PREFIX}: {title}"
+
+
+def _has_title_prefix(title: str) -> bool:
+    return title.strip().lower().startswith(TITLE_PREFIX.lower())
 
 
 def _normalize(value: Any) -> str:
