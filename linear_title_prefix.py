@@ -50,7 +50,9 @@ def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
 
         issue_id = _extract_issue_id(context)
         title = _extract_title(context)
-        if not issue_id or not title or _has_title_prefix(title):
+        if not issue_id or not title:
+            continue
+        if _has_title_prefix(title):
             return None
 
         return {
