@@ -119,6 +119,42 @@ class LinearTitlePrefixTests(unittest.TestCase):
             "Cursor researching: Do we need a frontend?",
         )
 
+    def test_changes_new_value_takes_precedence_over_stale_state(self):
+        event = {
+            "type": "Issue Updated",
+            "updatedFields": ["state"],
+            "changes": {"state": {"newValue": "To Research"}},
+            "data": {
+                "issue": {
+                    "id": "issue-id",
+                    "title": "Do we need a frontend?",
+                    "state": {"name": "Backlog"},
+                }
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event)["title"],
+            "Cursor researching: Do we need a frontend?",
+        )
+
+    def test_accepts_list_style_change_records(self):
+        event = {
+            "action": "update",
+            "changes": [{"field": "workflowState", "to": {"name": "To Research"}}],
+            "data": {
+                "issue": {
+                    "identifier": "POI-4520",
+                    "title": "Do we need a frontend?",
+                }
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event)["issueId"],
+            "POI-4520",
+        )
+
     def test_requires_issue_id_and_title(self):
         self.assertIsNone(
             build_issue_title_update(

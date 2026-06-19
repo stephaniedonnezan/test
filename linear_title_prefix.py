@@ -181,6 +181,10 @@ def _extract_new_status(contexts: Iterable[Mapping[str, Any]]) -> str | None:
         if value:
             return value
 
+    changes_status = _status_from_changes(contexts)
+    if changes_status:
+        return changes_status
+
     for context in contexts:
         for key in ("status", "state", "workflowState", "workflow_state"):
             value = context.get(key)
@@ -191,36 +195,65 @@ def _extract_new_status(contexts: Iterable[Mapping[str, Any]]) -> str | None:
             elif _text(value):
                 return _text(value)
 
-    changes_status = _status_from_changes(contexts)
-    if changes_status:
-        return changes_status
-
     return None
 
 
 def _status_from_changes(contexts: Iterable[Mapping[str, Any]]) -> str | None:
     for context in contexts:
         changes = context.get("changes")
-        if not isinstance(changes, Mapping):
-            continue
-
-        for key, change in changes.items():
-            if not _is_status_field_name(key):
-                continue
-            if isinstance(change, Mapping):
-                value = _first_text(
-                    (change,),
-                    ("newValue", "new_value", "to", "after", "name", "title"),
-                )
-                if value:
-                    return value
-                nested_value = change.get("to")
-                if isinstance(nested_value, Mapping):
-                    value = _first_text((nested_value,), ("name", "title", "label"))
+        if isinstance(changes, Mapping):
+            value = _status_from_change_mapping(changes)
+            if value:
+                return value
+        elif isinstance(changes, Iterable) and not isinstance(changes, (str, bytes)):
+            for change in changes:
+                if isinstance(change, Mapping):
+                    value = _status_from_change_record(change)
                     if value:
                         return value
-            elif _text(change):
-                return _text(change)
+
+    return None
+
+
+def _status_from_change_mapping(changes: Mapping[str, Any]) -> str | None:
+    for key, change in changes.items():
+        if not _is_status_field_name(key):
+            continue
+        if isinstance(change, Mapping):
+            value = _status_from_change_value(change)
+            if value:
+                return value
+        if _text(change):
+            return _text(change)
+    return None
+
+
+def _status_from_change_record(change: Mapping[str, Any]) -> str | None:
+    field = _first_text((change,), ("field", "fieldName", "field_name"))
+    if field and not _is_status_field_name(field):
+        return None
+
+    return _status_from_change_value(change)
+
+
+def _status_from_change_value(change: Mapping[str, Any]) -> str | None:
+    value = _first_text(
+        (change,),
+        ("newValue", "new_value", "to", "after", "value", "title", "label"),
+    )
+    if value:
+        return value
+
+    for key in ("newValue", "new_value", "to", "after", "value"):
+        nested_value = change.get(key)
+        if isinstance(nested_value, Mapping):
+            value = _first_text((nested_value,), ("name", "title", "label"))
+            if value:
+                return value
+
+    value = _first_text((change,), ("name",))
+    if value and not _is_status_field_name(value):
+        return value
 
     return None
 
