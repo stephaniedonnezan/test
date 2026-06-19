@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 import sys
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from typing import Any
 
 
@@ -96,7 +96,7 @@ def _field_names_include_status(fields: Any) -> bool:
         candidates = [fields]
     elif isinstance(fields, Mapping):
         candidates = fields.keys()
-    elif isinstance(fields, list | tuple | set):
+    elif isinstance(fields, Iterable):
         candidates = fields
     else:
         return False
