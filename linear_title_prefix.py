@@ -93,7 +93,14 @@ def _is_status_change(sources: Iterable[Mapping[str, Any]]) -> bool:
     for source in sources:
         for key in ("trigger", "webhookType", "action", "type", "event", "eventType"):
             marker = _normalize_identifier(source.get(key))
-            if marker in {"statuschanged", "statechanged", "workflowstatechanged"}:
+            if marker in {
+                "statuschange",
+                "statuschanged",
+                "statechange",
+                "statechanged",
+                "workflowstatechange",
+                "workflowstatechanged",
+            }:
                 return True
             if marker in {"update", "updated", "issueupdated", "updatedissue"}:
                 saw_generic_update = True
