@@ -170,24 +170,31 @@ def _contexts(event: Mapping[str, Any]) -> list[Mapping[str, Any]]:
         if isinstance(value, Mapping) and value not in contexts:
             contexts.append(value)
 
-    trigger_context = event.get("triggerContext") or event.get("trigger_context")
-    add(trigger_context)
-    if isinstance(trigger_context, Mapping):
-        data = trigger_context.get("data")
-        issue = trigger_context.get("issue")
+    def add_payload(value: Any) -> None:
+        if not isinstance(value, Mapping):
+            return
+
+        trigger_context = value.get("triggerContext") or value.get("trigger_context")
+        add(trigger_context)
+        if isinstance(trigger_context, Mapping):
+            data = trigger_context.get("data")
+            issue = trigger_context.get("issue")
+            add(issue)
+            if isinstance(data, Mapping):
+                add(data.get("issue"))
+            add(data)
+
+        data = value.get("data")
+        issue = value.get("issue")
         add(issue)
-        add(data)
         if isinstance(data, Mapping):
             add(data.get("issue"))
+        add(data)
 
-    data = event.get("data")
-    issue = event.get("issue")
-    add(issue)
-    add(data)
-    if isinstance(data, Mapping):
-        add(data.get("issue"))
+        add(value)
 
-    add(event)
+    add_payload(event.get("automation_trigger_info") or event.get("automationTriggerInfo"))
+    add_payload(event)
     return contexts
 
 

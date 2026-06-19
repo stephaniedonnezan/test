@@ -29,6 +29,30 @@ class LinearTitlePrefixTest(unittest.TestCase):
             },
         )
 
+    def test_handles_cloud_automation_trigger_info_wrapper(self):
+        event = {
+            "automation_trigger_info": {
+                "automationId": "automation-1",
+                "triggerContext": {
+                    "triggerType": "linear",
+                    "webhookType": "issue",
+                    "trigger": "status_changed",
+                    "newStatus": "To Research",
+                    "id": "POI-4637",
+                    "title": "Remove obsolete emissions inputs",
+                },
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4637",
+                "title": "Cursor researching: Remove obsolete emissions inputs",
+            },
+        )
+
     def test_ignores_status_change_to_other_status(self):
         event = {
             "triggerContext": {
