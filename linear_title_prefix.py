@@ -11,7 +11,7 @@ from typing import Any
 
 PREFIX = "Cursor researching"
 TARGET_STATUS = "to research"
-STATUS_FIELD_NAMES = {"status", "state", "workflowstate", "workflow status"}
+STATUS_FIELD_NAMES = {"status", "state", "workflow state", "workflow status"}
 
 
 def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
@@ -37,7 +37,8 @@ def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
         return None
 
     issue_id = _first_text(
-        _values_for_keys(contexts, ("issueId", "issue_id", "identifier", "key", "id"))
+        _values_for_keys(contexts, ("issueId", "issue_id", "identifier", "key")),
+        _values_for_keys(contexts, ("id",)),
     )
     title = _first_text(_values_for_keys(contexts, ("title", "name")))
     if not issue_id or not title:
@@ -72,10 +73,10 @@ def _context_candidates(event: Mapping[str, Any]) -> list[Mapping[str, Any]]:
         add(automation_info.get("triggerContext"))
 
     data = event.get("data")
-    add(data)
     if isinstance(data, Mapping):
-        add(data.get("issue"))
         add(data.get("triggerContext"))
+        add(data.get("issue"))
+    add(data)
 
     issue = event.get("issue")
     add(issue)

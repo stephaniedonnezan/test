@@ -103,8 +103,12 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
         }
 
         self.assertEqual(
-            build_issue_title_update(event)["title"],
-            "Cursor researching: List changes",
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4567",
+                "title": "Cursor researching: List changes",
+            },
         )
 
     def test_uses_status_fallback_when_new_status_absent(self):
