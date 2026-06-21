@@ -84,6 +84,28 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_prefers_nested_issue_id_over_outer_webhook_id(self):
+        event = {
+            "id": "webhook-event-id",
+            "action": "update",
+            "type": "Issue",
+            "updatedFields": ["state"],
+            "data": {
+                "id": "POI-125",
+                "title": "Investigate traceability checks",
+                "state": {"name": "To Research"},
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-125",
+                "title": "Cursor researching: Investigate traceability checks",
+            },
+        )
+
     def test_uses_changed_status_target_value(self):
         event = {
             "action": "Issue Updated",
