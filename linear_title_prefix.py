@@ -45,8 +45,7 @@ def build_issue_title_update(event: Mapping[str, Any] | None) -> dict[str, str] 
     if not _is_research_status_change(contexts):
         return None
 
-    issue_id = _first_text(contexts, _ISSUE_ID_KEYS)
-    title = _first_text(contexts, ("title", "issueTitle", "issue_title"))
+    issue_id, title = _issue_fields(contexts)
     if not issue_id or not title:
         return None
 
@@ -228,6 +227,18 @@ def _first_text(contexts: list[Mapping[str, Any]], keys: Iterable[str]) -> str |
             if text:
                 return text
     return None
+
+
+def _issue_fields(contexts: list[Mapping[str, Any]]) -> tuple[str | None, str | None]:
+    title_keys = ("title", "issueTitle", "issue_title")
+
+    for context in contexts:
+        issue_id = _first_text([context], _ISSUE_ID_KEYS)
+        title = _first_text([context], title_keys)
+        if issue_id and title:
+            return issue_id, title
+
+    return _first_text(contexts, _ISSUE_ID_KEYS), _first_text(contexts, title_keys)
 
 
 def _extract_text(value: Any) -> str | None:
