@@ -122,6 +122,9 @@ def _is_status_change_event(contexts: list[Mapping[str, Any]]) -> bool:
     if any(value in GENERIC_UPDATE_TRIGGERS for value in trigger_values):
         return _changed_fields_include_status(contexts)
 
+    if trigger_values:
+        return False
+
     return _first_value(
         contexts,
         (
