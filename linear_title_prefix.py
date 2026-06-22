@@ -12,7 +12,7 @@ from typing import Any
 TITLE_PREFIX = "Cursor researching"
 TARGET_STATUS = "to research"
 
-_STATUS_FIELD_NAMES = {"status", "state", "workflowstate", "workflow status"}
+_STATUS_FIELD_NAMES = {"status", "state", "workflow state", "workflow status"}
 _NEW_STATUS_KEYS = (
     "newStatus",
     "new_status",
