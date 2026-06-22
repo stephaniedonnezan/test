@@ -6,7 +6,7 @@ to `to research`.
 Run the helper against a Linear automation payload:
 
 ```bash
-python linear_issue_title.py --payload-file payload.json
+python3 linear_issue_title.py --payload-file payload.json
 ```
 
 If `--payload-file` is omitted, the helper reads JSON from stdin.
