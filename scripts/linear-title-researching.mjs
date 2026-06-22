@@ -38,6 +38,17 @@ export function statusNameFromPayload(payload) {
   ]);
 }
 
+function hasUpdatedFromState(payload) {
+  return Boolean(
+    readPath(payload, ['updatedFrom', 'stateId']) ||
+      readPath(payload, ['updatedFrom', 'state', 'id']) ||
+      readPath(payload, ['updatedFrom', 'state', 'name']) ||
+      readPath(payload, ['data', 'updatedFrom', 'stateId']) ||
+      readPath(payload, ['data', 'updatedFrom', 'state', 'id']) ||
+      readPath(payload, ['data', 'updatedFrom', 'state', 'name'])
+  );
+}
+
 export function isStatusChangedToResearch(payload) {
   const triggerName = compact(payload?.triggerContext?.trigger).toLowerCase();
   const actionName = compact(payload?.action).toLowerCase();
@@ -46,7 +57,7 @@ export function isStatusChangedToResearch(payload) {
   const statusName = statusNameFromPayload(payload).toLowerCase();
 
   const isIssueEvent = webhookType === 'issue' || issueType === 'issue';
-  const isStatusChange = triggerName === 'status_changed' || actionName === 'update';
+  const isStatusChange = triggerName === 'status_changed' || (actionName === 'update' && hasUpdatedFromState(payload));
 
   return isIssueEvent && isStatusChange && statusName === 'to research';
 }

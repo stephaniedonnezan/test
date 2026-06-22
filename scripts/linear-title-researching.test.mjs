@@ -36,6 +36,43 @@ test('ignores non-research statuses', () => {
   );
 });
 
+test('detects raw Linear issue update webhooks when the state changed to to research', () => {
+  assert.equal(
+    isStatusChangedToResearch({
+      action: 'update',
+      type: 'Issue',
+      updatedFrom: {
+        stateId: 'previous-status-id'
+      },
+      data: {
+        id: 'POI-4838',
+        title: 'Redesign of "Add Input"',
+        state: {
+          name: 'to research'
+        }
+      }
+    }),
+    true
+  );
+});
+
+test('ignores raw Linear issue update webhooks without a state change', () => {
+  assert.equal(
+    isStatusChangedToResearch({
+      action: 'update',
+      type: 'Issue',
+      data: {
+        id: 'POI-4838',
+        title: 'Redesign of "Add Input"',
+        state: {
+          name: 'to research'
+        }
+      }
+    }),
+    false
+  );
+});
+
 test('adds the Cursor researching prefix once', () => {
   assert.equal(titleWithCursorResearching('Redesign of "Add Input"'), 'Cursor researching: Redesign of "Add Input"');
   assert.equal(
