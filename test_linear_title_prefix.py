@@ -45,6 +45,29 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_prefixes_nested_automation_trigger_info_shape(self):
+        event = {
+            "automation_trigger_info": {
+                "automationId": "automation-id",
+                "triggerContext": {
+                    "trigger": "status_changed",
+                    "newStatus": "to research",
+                    "id": "POI-4579",
+                    "title": "MB export corrections",
+                    "status": "To Research",
+                },
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4579",
+                "title": "Cursor researching: MB export corrections",
+            },
+        )
+
     def test_accepts_nested_linear_issue_update_when_status_field_changed(self):
         event = {
             "action": "update",

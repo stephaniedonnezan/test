@@ -12,6 +12,7 @@ from typing import Any
 PREFIX = "Cursor researching"
 TARGET_STATUS = "to research"
 STATUS_FIELD_NAMES = {"status", "state", "workflowstate", "workflow status"}
+CONTEXT_KEYS = ("automation_trigger_info", "automationTriggerInfo", "triggerContext", "data", "issue")
 
 
 def build_issue_title_update(event: Any) -> dict[str, str] | None:
@@ -56,14 +57,12 @@ def _contexts(event: Mapping[str, Any]) -> list[Mapping[str, Any]]:
         if isinstance(value, Mapping) and value not in contexts:
             contexts.append(value)
 
-    add(event.get("triggerContext"))
-    add(event.get("data"))
-    add(event.get("issue"))
+    for key in CONTEXT_KEYS:
+        add(event.get(key))
 
     for context in list(contexts):
-        add(context.get("triggerContext"))
-        add(context.get("data"))
-        add(context.get("issue"))
+        for key in CONTEXT_KEYS:
+            add(context.get(key))
 
     return contexts
 
