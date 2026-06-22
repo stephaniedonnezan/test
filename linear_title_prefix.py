@@ -11,7 +11,7 @@ from typing import Any
 
 TITLE_PREFIX = "Cursor researching"
 TARGET_STATUS = "to research"
-STATUS_CHANGE_FIELDS = {"status", "state", "workflowstate", "workflow_state"}
+STATUS_CHANGE_FIELDS = {"status", "state", "workflowstate"}
 
 
 def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
@@ -75,8 +75,9 @@ def _candidate_payloads(event: Mapping[str, Any]) -> list[Mapping[str, Any]]:
 
 
 def _is_status_change_payload(payload: Mapping[str, Any]) -> bool:
-    trigger = _clean_text(_first_present(payload, ("trigger", "event", "action", "type")))
-    if trigger and _normalise_key(trigger) in {
+    trigger = _clean_text(_first_present(payload, ("trigger", "event")))
+    trigger_key = _normalise_key(trigger)
+    if trigger_key in {
         "statuschanged",
         "statuschange",
         "statechanged",
@@ -85,6 +86,9 @@ def _is_status_change_payload(payload: Mapping[str, Any]) -> bool:
         "workflowstatechange",
     }:
         return True
+
+    if trigger:
+        return False
 
     if _clean_text(payload.get("webhookType")).lower() == "issue":
         if _first_present(payload, ("newStatus", "status", "state", "workflowState")) is not None:
@@ -98,7 +102,8 @@ def _is_status_change_payload(payload: Mapping[str, Any]) -> bool:
     if _mentions_status_field(changes):
         return True
 
-    if _normalise_key(_clean_text(payload.get("action"))) in {"update", "updated"}:
+    action_key = _normalise_key(_clean_text(payload.get("action")))
+    if action_key in {"update", "updated"}:
         return _first_present(payload, ("newStatus", "status", "state", "workflowState")) is not None
 
     return False
@@ -191,7 +196,7 @@ def _normalise_status(value: str) -> str:
 
 
 def _normalise_key(value: str) -> str:
-    return re.sub(r"[^a-z0-9_]", "", _split_camel_case(value).lower())
+    return re.sub(r"[^a-z0-9]", "", _split_camel_case(value).lower())
 
 
 def _split_camel_case(value: str) -> str:
