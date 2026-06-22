@@ -85,6 +85,47 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_prefers_linear_issue_identifier_over_webhook_id(self):
+        event = {
+            "id": "webhook-event-id",
+            "action": "update",
+            "updatedFields": ["state"],
+            "data": {
+                "identifier": "POI-10",
+                "title": "Use issue identifier",
+                "state": {"name": "To Research"},
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-10",
+                "title": "Cursor researching: Use issue identifier",
+            },
+        )
+
+    def test_accepts_linear_updated_from_state_id(self):
+        event = {
+            "action": "update",
+            "updatedFrom": {"stateId": "old-state-id"},
+            "data": {
+                "identifier": "POI-11",
+                "title": "State ID changed",
+                "state": {"name": "To Research"},
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-11",
+                "title": "Cursor researching: State ID changed",
+            },
+        )
+
     def test_accepts_status_from_changes_new_value(self):
         event = {
             "action": "Issue Updated",

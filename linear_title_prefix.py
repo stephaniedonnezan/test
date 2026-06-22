@@ -13,7 +13,16 @@ PREFIX = "Cursor researching"
 TARGET_STATUS = "to research"
 
 _TRIGGER_KEYS = ("trigger", "webhookType", "webhook_type", "action", "type")
-_STATUS_FIELD_NAMES = {"status", "state", "workflowstate", "workflow_state"}
+_STATUS_FIELD_NAMES = {
+    "status",
+    "status_id",
+    "state",
+    "state_id",
+    "workflowstate",
+    "workflowstate_id",
+    "workflow_state",
+    "workflow_state_id",
+}
 _DIRECT_STATUS_TRIGGERS = {
     "status changed",
     "status change",
@@ -52,7 +61,7 @@ def build_issue_title_update(event: Mapping[str, Any] | None) -> dict[str, str] 
     if _normalize(status) != TARGET_STATUS:
         return None
 
-    issue_id = _string_value(context, ("issueId", "issue_id", "id", "identifier", "key"))
+    issue_id = _string_value(context, ("issueId", "issue_id", "identifier", "key", "id"))
     title = _string_value(context, ("title", "name"))
     if not issue_id or not title:
         return None
@@ -133,10 +142,14 @@ def _updated_status_fields(context: Mapping[str, Any]) -> bool:
     changes = context.get("changes")
     if isinstance(changes, Mapping):
         for key in changes:
-            if _normalize_field_name(key) in _STATUS_FIELD_NAMES:
+            if _is_status_field_name(key):
                 return True
     elif _contains_status_field(changes):
         return True
+
+    for key in ("updatedFrom", "updated_from"):
+        if _contains_status_field(context.get(key)):
+            return True
 
     return False
 
@@ -150,7 +163,7 @@ def _changed_status(context: Mapping[str, Any]) -> str | None:
     changes = context.get("changes")
     if isinstance(changes, Mapping):
         for key, value in changes.items():
-            if _normalize_field_name(key) in _STATUS_FIELD_NAMES:
+            if _is_status_field_name(key):
                 status = _status_name(value)
                 if status:
                     return status
@@ -170,10 +183,10 @@ def _changed_status(context: Mapping[str, Any]) -> str | None:
 
 def _contains_status_field(value: Any) -> bool:
     if isinstance(value, str):
-        return _normalize_field_name(value) in _STATUS_FIELD_NAMES
+        return _is_status_field_name(value)
 
     if isinstance(value, Mapping):
-        return any(_normalize_field_name(key) in _STATUS_FIELD_NAMES for key in value)
+        return any(_is_status_field_name(key) for key in value)
 
     if isinstance(value, (list, tuple, set)):
         return any(_contains_status_field(item) for item in value)
@@ -219,6 +232,10 @@ def _normalize(value: Any) -> str:
 
 def _normalize_field_name(value: Any) -> str:
     return re.sub(r"[^a-z0-9_]", "", _normalize(value).replace(" ", "_"))
+
+
+def _is_status_field_name(value: Any) -> bool:
+    return _normalize_field_name(value) in _STATUS_FIELD_NAMES
 
 
 def main() -> int:
