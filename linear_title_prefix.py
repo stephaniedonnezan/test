@@ -182,10 +182,6 @@ def _extract_new_status(records: list[Mapping[str, Any]]) -> str | None:
         if value:
             return value
 
-        value = _status_from_changes(record.get("updatedFrom"), prefer_current=False)
-        if value:
-            return value
-
     for record in records:
         for key in ("status", "state", "workflowState"):
             value = _string_or_name(record.get(key))
@@ -195,31 +191,28 @@ def _extract_new_status(records: list[Mapping[str, Any]]) -> str | None:
     return None
 
 
-def _status_from_changes(changes: Any, prefer_current: bool = True) -> str | None:
+def _status_from_changes(changes: Any) -> str | None:
     if not isinstance(changes, Mapping):
         return None
 
     for key, value in changes.items():
         if _contains_status_field(key):
-            extracted = _new_change_value(value, prefer_current)
+            extracted = _new_change_value(value)
             if extracted:
                 return extracted
         if isinstance(value, Mapping) and _contains_status_field(value.get("field")):
-            extracted = _new_change_value(value, prefer_current)
+            extracted = _new_change_value(value)
             if extracted:
                 return extracted
 
     return None
 
 
-def _new_change_value(value: Any, prefer_current: bool) -> str | None:
+def _new_change_value(value: Any) -> str | None:
     if not isinstance(value, Mapping):
         return _string_or_name(value)
 
-    preferred_keys = ("new", "to", "newValue", "toValue", "after", "current")
-    fallback_keys = ("from", "old", "oldValue", "previous")
-    keys = preferred_keys if prefer_current else preferred_keys + fallback_keys
-    for key in keys:
+    for key in ("new", "to", "newValue", "toValue", "after", "current"):
         extracted = _string_or_name(value.get(key))
         if extracted:
             return extracted

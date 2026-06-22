@@ -157,6 +157,28 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_handles_linear_updated_from_status_marker(self):
+        event = {
+            "action": "update",
+            "updatedFrom": {"state": {"name": "Backlog"}},
+            "data": {
+                "issue": {
+                    "identifier": "POI-4965",
+                    "title": "performance work",
+                    "state": {"name": "To Research"},
+                }
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4965",
+                "title": "Cursor researching: performance work",
+            },
+        )
+
     def test_handles_status_change_value_from_changes(self):
         event = {
             "type": "Issue Updated",
