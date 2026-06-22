@@ -43,7 +43,6 @@ _EXPLICIT_STATUS_KEYS = (
 )
 _FALLBACK_STATUS_KEYS = ("status", "state", "workflowState", "workflow_state")
 _TITLE_KEYS = ("title", "name")
-_ISSUE_ID_KEYS = ("identifier", "key", "issueId", "issue_id", "id")
 
 
 def build_issue_title_update(event: Mapping[str, Any] | None) -> dict[str, str] | None:
@@ -219,11 +218,21 @@ def _new_change_value(change: Any) -> str | None:
 
 
 def _extract_issue_id(contexts: list[Mapping[str, Any]]) -> str | None:
-    for context in contexts:
-        for key in _ISSUE_ID_KEYS:
+    for key in ("identifier", "key", "issueId", "issue_id"):
+        for context in contexts:
             value = _text_value(context.get(key))
             if value:
                 return value
+
+    for context in contexts[1:]:
+        value = _text_value(context.get("id"))
+        if value:
+            return value
+
+    for context in contexts:
+        value = _text_value(context.get("id"))
+        if value:
+            return value
     return None
 
 
