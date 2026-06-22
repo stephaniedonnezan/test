@@ -44,6 +44,27 @@ class BuildIssueTitleUpdateTests(unittest.TestCase):
             },
         )
 
+    def test_accepts_wrapped_automation_trigger_info_payload(self):
+        event = {
+            "automation_trigger_info": {
+                "triggerContext": {
+                    "trigger": "status_changed",
+                    "newStatus": "to research",
+                    "id": "POI-4578",
+                    "title": "Container logic issue",
+                }
+            }
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4578",
+                "title": "Cursor researching: Container logic issue",
+            },
+        )
+
     def test_accepts_nested_linear_issue_update_payload(self):
         event = {
             "action": "update",
@@ -66,6 +87,49 @@ class BuildIssueTitleUpdateTests(unittest.TestCase):
                 "title": "Cursor researching: Container logic issue",
             },
         )
+
+    def test_uses_change_object_for_new_status(self):
+        event = {
+            "action": "update",
+            "type": "Issue",
+            "data": {
+                "changes": {
+                    "state": {
+                        "from": {"name": "Backlog"},
+                        "to": {"name": "To Research"},
+                    }
+                },
+                "issue": {
+                    "identifier": "POI-4578",
+                    "title": "Container logic issue",
+                },
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4578",
+                "title": "Cursor researching: Container logic issue",
+            },
+        )
+
+    def test_prefers_nested_issue_identity_over_webhook_envelope(self):
+        event = {
+            "id": "webhook-event-id",
+            "action": "update",
+            "data": {
+                "updatedFields": ["state"],
+                "issue": {
+                    "identifier": "POI-4578",
+                    "title": "Container logic issue",
+                    "state": {"name": "To Research"},
+                },
+            },
+        }
+
+        self.assertEqual(build_issue_title_update(event)["issueId"], "POI-4578")
 
     def test_accepts_status_variants(self):
         event = {

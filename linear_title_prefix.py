@@ -35,12 +35,13 @@ def build_issue_title_update(event: Mapping[str, Any] | None) -> dict[str, str] 
     if not _is_status_change(event, contexts):
         return None
 
-    status = _new_status(contexts)
+    status = _new_status(event, contexts)
     if _normalize_value(status) != TARGET_STATUS:
         return None
 
-    issue_id = _first_text(contexts, ("issueId", "issue_id", "identifier", "key", "id"))
-    title = _first_text(contexts, ("title", "name"))
+    issue_contexts = _issue_contexts(event, contexts)
+    issue_id = _first_text(issue_contexts, ("issueId", "issue_id", "identifier", "key", "id"))
+    title = _first_text(issue_contexts, ("title", "name"))
     if issue_id is None or title is None:
         return None
 
@@ -59,8 +60,15 @@ def build_issue_title_update(event: Mapping[str, Any] | None) -> dict[str, str] 
 
 def _contexts(event: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     """Return likely payload locations, ordered from most explicit to fallback."""
-    contexts: list[Mapping[str, Any]] = [event]
-    for path in (
+    contexts: list[Mapping[str, Any]] = []
+    roots = [
+        event,
+        event.get("automation_trigger_info"),
+        event.get("automationTriggerInfo"),
+        event.get("triggerContext"),
+    ]
+    paths = (
+        (),
         ("triggerContext",),
         ("data",),
         ("issue",),
@@ -68,16 +76,56 @@ def _contexts(event: Mapping[str, Any]) -> list[Mapping[str, Any]]:
         ("triggerContext", "issue"),
         ("triggerContext", "data"),
         ("triggerContext", "data", "issue"),
-    ):
-        value: Any = event
-        for key in path:
-            if not isinstance(value, Mapping):
-                value = None
-                break
-            value = value.get(key)
-        if isinstance(value, Mapping) and value not in contexts:
-            contexts.append(value)
+    )
+    for root in roots:
+        if not isinstance(root, Mapping):
+            continue
+        for path in paths:
+            value = _at_path(root, path)
+            if isinstance(value, Mapping) and value not in contexts:
+                contexts.append(value)
     return contexts
+
+
+def _issue_contexts(
+    event: Mapping[str, Any], contexts: Sequence[Mapping[str, Any]]
+) -> list[Mapping[str, Any]]:
+    """Prefer issue-shaped objects over outer webhook envelopes for id/title."""
+    issue_contexts: list[Mapping[str, Any]] = []
+    roots = [
+        event,
+        event.get("automation_trigger_info"),
+        event.get("automationTriggerInfo"),
+        event.get("triggerContext"),
+    ]
+    paths = (
+        ("triggerContext", "data", "issue"),
+        ("data", "issue"),
+        ("triggerContext", "issue"),
+        ("issue",),
+        ("triggerContext",),
+        (),
+    )
+    for root in roots:
+        if not isinstance(root, Mapping):
+            continue
+        for path in paths:
+            value = _at_path(root, path)
+            if isinstance(value, Mapping) and value not in issue_contexts:
+                issue_contexts.append(value)
+    for context in contexts:
+        if context not in issue_contexts:
+            issue_contexts.append(context)
+    return issue_contexts
+
+
+def _at_path(value: Mapping[str, Any], path: Sequence[str]) -> Any:
+    current: Any = value
+    for key in path:
+        if not isinstance(current, Mapping):
+            return None
+        current = current.get(key)
+    return current
 
 
 def _is_status_change(event: Mapping[str, Any], contexts: Sequence[Mapping[str, Any]]) -> bool:
@@ -123,7 +171,7 @@ def _changes_include_status(value: Any) -> bool:
     return _field_collection_contains_status(value)
 
 
-def _new_status(contexts: Sequence[Mapping[str, Any]]) -> str | None:
+def _new_status(event: Mapping[str, Any], contexts: Sequence[Mapping[str, Any]]) -> str | None:
     for keys in (
         ("newStatus", "new_status", "statusName", "status_name"),
         ("to", "newValue", "new_value"),
@@ -132,9 +180,67 @@ def _new_status(contexts: Sequence[Mapping[str, Any]]) -> str | None:
         if status is not None:
             return status
 
+    status = _status_from_changes(event)
+    if status is not None:
+        return status
+
     for context in contexts:
         for key in ("state", "workflowState", "workflow_state", "status"):
             status = _status_text(context.get(key))
+            if status is not None:
+                return status
+    return None
+
+
+def _status_from_changes(event: Mapping[str, Any]) -> str | None:
+    for value in _walk_values(event, {"changes", "changedFields", "changed_fields"}):
+        status = _extract_status_change(value)
+        if status is not None:
+            return status
+    return None
+
+
+def _extract_status_change(value: Any) -> str | None:
+    if isinstance(value, Mapping):
+        for key, child in value.items():
+            normalized_key = _normalize_field(str(key))
+            if normalized_key in STATUS_FIELDS:
+                status = _status_from_change_value(child)
+                if status is not None:
+                    return status
+            status = _extract_status_change(child)
+            if status is not None:
+                return status
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        for child in value:
+            status = _extract_status_change(child)
+            if status is not None:
+                return status
+    return None
+
+
+def _status_from_change_value(value: Any) -> str | None:
+    if isinstance(value, str) and value.strip():
+        return value
+    if isinstance(value, Mapping):
+        for key in (
+            "newStatus",
+            "new_status",
+            "statusName",
+            "status_name",
+            "to",
+            "newValue",
+            "new_value",
+            "after",
+            "name",
+        ):
+            status = _status_text(value.get(key))
+            if status is not None:
+                return status
+        return _extract_status_change(value)
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        for child in value:
+            status = _status_from_change_value(child)
             if status is not None:
                 return status
     return None
