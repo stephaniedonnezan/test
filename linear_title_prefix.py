@@ -21,9 +21,6 @@ _NEW_STATUS_KEYS = {
     "newstatus",
     "newstate",
     "newworkflowstate",
-    "status",
-    "state",
-    "workflowstate",
 }
 _TRIGGER_KEYS = {"trigger", "webhooktype", "action", "type"}
 _DIRECT_STATUS_TRIGGERS = {"statuschanged", "statuschange", "statechanged", "workflowstatechanged"}
@@ -136,7 +133,7 @@ def _contains_status_field(value: Any) -> bool:
     if isinstance(value, Mapping):
         return any(_normalize_key(key) in _STATUS_FIELDS or _contains_status_field(nested) for key, nested in value.items())
 
-    if isinstance(value, list | tuple | set):
+    if isinstance(value, (list, tuple, set)):
         return any(_contains_status_field(item) for item in value)
 
     return False
