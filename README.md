@@ -11,6 +11,9 @@ Cursor researching: <original title>
 
 The handler ignores non-status updates, ignores other statuses, and avoids
 adding the prefix when the title already starts with `Cursor researching`.
+It supports flat Cursor trigger contexts, Cursor Cloud
+`automation_trigger_info.triggerContext` wrappers, and nested Linear issue
+webhook payloads.
 
 ## Usage
 

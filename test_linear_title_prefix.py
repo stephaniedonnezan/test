@@ -26,6 +26,27 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_handles_cursor_cloud_automation_wrapper(self):
+        event = {
+            "automation_trigger_info": {
+                "triggerContext": {
+                    "trigger": "status_changed",
+                    "newStatus": "to research",
+                    "id": "POI-5045",
+                    "title": "Supply contract title copy is confusing",
+                }
+            }
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-5045",
+                "title": "Cursor researching: Supply contract title copy is confusing",
+            },
+        )
+
     def test_ignores_non_status_change_triggers(self):
         event = {
             "triggerContext": {
@@ -126,6 +147,28 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
                 "issue": {
                     "identifier": "POI-5045",
                     "title": "Supply contract title copy is confusing",
+                }
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-5045",
+                "title": "Cursor researching: Supply contract title copy is confusing",
+            },
+        )
+
+    def test_changes_destination_overrides_stale_current_state(self):
+        event = {
+            "webhookType": "Issue Updated",
+            "changes": {"state": {"from": "Backlog", "to": "to research"}},
+            "data": {
+                "issue": {
+                    "identifier": "POI-5045",
+                    "title": "Supply contract title copy is confusing",
+                    "state": {"name": "Backlog"},
                 }
             },
         }

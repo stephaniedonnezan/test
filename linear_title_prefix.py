@@ -58,6 +58,9 @@ def _flatten_payload(event: Mapping[str, Any]) -> dict[str, Any]:
         ("data", "issue"),
         ("issue",),
         ("data",),
+        ("automation_trigger_info", "triggerContext"),
+        ("automation_trigger_info", "trigger_context"),
+        ("automationTriggerInfo", "triggerContext"),
         ("triggerContext",),
         ("trigger_context",),
         (),
@@ -146,6 +149,9 @@ def _field_name_is_status(value: Any) -> bool:
 
 
 def _new_status(payload: Mapping[str, Any]) -> str | None:
+    if (changed_status := _changed_status(payload)) is not None:
+        return changed_status
+
     for key in (
         "newStatus",
         "new_status",
@@ -162,20 +168,26 @@ def _new_status(payload: Mapping[str, Any]) -> str | None:
         if (text := _text(value)) is not None:
             return text
 
+    return None
+
+
+def _changed_status(payload: Mapping[str, Any]) -> str | None:
     changes = payload.get("changes")
-    if isinstance(changes, Mapping):
-        for key, value in changes.items():
-            if not _field_name_is_status(key):
-                continue
-            if isinstance(value, Mapping):
-                for nested_key in ("to", "new", "after"):
-                    nested_value = value.get(nested_key)
-                    if isinstance(nested_value, Mapping):
-                        nested_value = nested_value.get("name")
-                    if (text := _text(nested_value)) is not None:
-                        return text
-            if (text := _text(value)) is not None:
-                return text
+    if not isinstance(changes, Mapping):
+        return None
+
+    for key, value in changes.items():
+        if not _field_name_is_status(key):
+            continue
+        if isinstance(value, Mapping):
+            for nested_key in ("to", "new", "after"):
+                nested_value = value.get(nested_key)
+                if isinstance(nested_value, Mapping):
+                    nested_value = nested_value.get("name")
+                if (text := _text(nested_value)) is not None:
+                    return text
+        if (text := _text(value)) is not None:
+            return text
 
     return None
 
