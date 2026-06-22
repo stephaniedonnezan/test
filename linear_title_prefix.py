@@ -218,7 +218,7 @@ def _text_values(payload: Mapping[str, Any], keys: Iterable[str]) -> list[str]:
 def _normalize(value: Any) -> str:
     if not isinstance(value, str):
         return ""
-    return re.sub(r"[^a-z0-9]", "", value).lower()
+    return re.sub(r"[^a-z0-9]", "", value.lower())
 
 
 def main() -> int:
