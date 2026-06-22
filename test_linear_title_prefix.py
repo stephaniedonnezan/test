@@ -81,6 +81,28 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_builds_update_when_generic_update_markers_are_nested(self):
+        event = {
+            "action": "update",
+            "data": {
+                "updatedFields": ["workflow status"],
+                "issue": {
+                    "identifier": "POI-5093",
+                    "title": "MB export post QA updates",
+                    "workflowState": {"name": "To Research"},
+                },
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-5093",
+                "title": "Cursor researching: MB export post QA updates",
+            },
+        )
+
     def test_prefers_explicit_change_status_over_current_status(self):
         event = {
             "type": "Issue Updated",
@@ -106,6 +128,20 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             "newStatus": "to research",
             "id": "POI-5093",
             "title": "MB export post QA updates",
+        }
+
+        self.assertIsNone(build_issue_title_update(event))
+
+    def test_ignores_generic_issue_update_without_status_change_marker(self):
+        event = {
+            "action": "update",
+            "data": {
+                "issue": {
+                    "identifier": "POI-5093",
+                    "title": "MB export post QA updates",
+                    "state": {"name": "To Research"},
+                },
+            },
         }
 
         self.assertIsNone(build_issue_title_update(event))

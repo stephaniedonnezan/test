@@ -11,7 +11,7 @@ from typing import Any
 
 RESEARCH_STATUS = "to research"
 TITLE_PREFIX = "Cursor researching"
-STATUS_FIELDS = {"status", "state", "workflowstate", "workflow status"}
+STATUS_FIELDS = {"status", "state", "workflowstate", "workflowstatus"}
 STATUS_VALUE_KEYS = (
     "newStatus",
     "new_status",
@@ -38,7 +38,7 @@ def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
         return None
 
     contexts = _candidate_contexts(event)
-    if not any(_is_status_change(context) for context in contexts):
+    if not _is_status_change(contexts):
         return None
 
     if _normalize_status(_extract_new_status(contexts)) != RESEARCH_STATUS:
@@ -95,13 +95,15 @@ def _append_mapping(
         contexts.append(value)
 
 
-def _is_status_change(context: Mapping[str, Any]) -> bool:
-    trigger_values = _trigger_values(context)
+def _is_status_change(contexts: list[Mapping[str, Any]]) -> bool:
+    trigger_values = [
+        value for context in contexts for value in _trigger_values(context)
+    ]
     if any(_is_status_changed_name(value) for value in trigger_values):
         return True
 
     if any(_is_generic_issue_update(value) for value in trigger_values):
-        return _mentions_status_field(context)
+        return any(_mentions_status_field(context) for context in contexts)
 
     return False
 
@@ -152,7 +154,7 @@ def _mentions_status_field(context: Mapping[str, Any]) -> bool:
             if isinstance(value, Mapping) and _mapping_mentions_status(value):
                 return True
 
-    return _mapping_mentions_status(context)
+    return False
 
 
 def _iterable_mentions_status(value: Any) -> bool:
