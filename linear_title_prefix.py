@@ -230,9 +230,10 @@ def _walk_mappings(value: Any) -> Iterable[Mapping[str, Any]]:
 
 
 def _first_string_for_keys(container: Mapping[str, Any], keys: Iterable[str]) -> str | None:
-    key_lookup = {_normalize_key(key): key for key in keys}
-    for key, value in container.items():
-        if _normalize_key(str(key)) not in key_lookup:
+    key_lookup = {_normalize_key(str(key)): value for key, value in container.items()}
+    for key in keys:
+        value = key_lookup.get(_normalize_key(key))
+        if value is None:
             continue
         string = _string_value(value)
         if string is not None:
