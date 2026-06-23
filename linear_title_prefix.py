@@ -253,6 +253,8 @@ def _lookup_changed_status(payload_maps: Sequence[Mapping[str, Any]]) -> str | N
         for key in _UPDATED_FIELD_KEYS:
             if key not in mapping:
                 continue
+            if key in {"updatedFrom", "updated_from"}:
+                continue
             status = _extract_changed_status_value(mapping[key])
             if status is not None:
                 return status
