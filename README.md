@@ -9,7 +9,7 @@ returns an action that prefixes the issue title with `Cursor researching`:
 ```json
 {
   "action": "update_issue_title",
-  "issueId": "POI-4575",
+  "issueId": "POI-123",
   "title": "Cursor researching: Existing issue title"
 }
 ```
