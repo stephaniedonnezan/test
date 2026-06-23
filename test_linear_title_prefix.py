@@ -102,6 +102,49 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_reads_new_status_from_change_objects(self):
+        event = {
+            "action": "update",
+            "changes": [{"field": "status", "newValue": "To Research"}],
+            "payload": {
+                "issue": {
+                    "identifier": "POI-4965",
+                    "title": "Changed status issue",
+                }
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4965",
+                "title": "Cursor researching: Changed status issue",
+            },
+        )
+
+    def test_uses_current_state_when_updated_from_marks_state_change(self):
+        event = {
+            "action": "Issue Updated",
+            "updatedFrom": {"stateId": "old-state"},
+            "data": {
+                "issue": {
+                    "identifier": "POI-4965",
+                    "title": "Updated from state issue",
+                    "state": {"name": "To Research"},
+                }
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4965",
+                "title": "Cursor researching: Updated from state issue",
+            },
+        )
+
     def test_ignores_non_target_status(self):
         event = {
             "trigger": "status_changed",

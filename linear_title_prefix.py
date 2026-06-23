@@ -86,6 +86,22 @@ _UPDATED_FIELD_KEYS = (
     "updatedFrom",
     "updated_from",
 )
+_FIELD_NAME_KEYS = ("field", "fieldName", "field_name", "key", "property")
+_CHANGED_STATUS_VALUE_KEYS = (
+    "newStatus",
+    "new_status",
+    "newState",
+    "new_state",
+    "new",
+    "to",
+    "newValue",
+    "new_value",
+    "toValue",
+    "to_value",
+    "after",
+    "current",
+    "value",
+)
 _ISSUE_ID_KEYS = ("issueId", "issue_id", "identifier", "key", "id")
 _TITLE_KEYS = ("title", "issueTitle", "issue_title")
 
@@ -129,8 +145,11 @@ def _payload_maps(event: Mapping[str, Any]) -> list[Mapping[str, Any]]:
         ("automation_trigger_info", "triggerContext"),
         ("triggerContext",),
         ("data", "issue"),
+        ("payload", "issue"),
+        ("payload", "data", "issue"),
         ("issue",),
         ("data",),
+        ("payload",),
     ):
         value = _lookup_path(event, path)
         if isinstance(value, Mapping):
@@ -200,6 +219,9 @@ def _has_status_field_marker(payload_maps: Sequence[Mapping[str, Any]]) -> bool:
 
 def _contains_status_field(value: Any) -> bool:
     if isinstance(value, Mapping):
+        for key in _FIELD_NAME_KEYS:
+            if key in value and _is_status_field_name(value[key]):
+                return True
         return any(_is_status_field_name(key) for key in value.keys())
     if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
         return any(_contains_status_field(item) for item in value)
@@ -215,11 +237,55 @@ def _lookup_status(payload_maps: Sequence[Mapping[str, Any]]) -> str | None:
     if explicit_status is not None:
         return _string_or_named_value(explicit_status)
 
+    changed_status = _lookup_changed_status(payload_maps)
+    if changed_status is not None:
+        return changed_status
+
     current_status = _lookup_value(payload_maps, _CURRENT_STATUS_KEYS)
     if current_status is not None:
         return _string_or_named_value(current_status)
 
     return None
+
+
+def _lookup_changed_status(payload_maps: Sequence[Mapping[str, Any]]) -> str | None:
+    for mapping in payload_maps:
+        for key in _UPDATED_FIELD_KEYS:
+            if key not in mapping:
+                continue
+            status = _extract_changed_status_value(mapping[key])
+            if status is not None:
+                return status
+    return None
+
+
+def _extract_changed_status_value(value: Any) -> str | None:
+    if isinstance(value, Mapping):
+        for key in _FIELD_NAME_KEYS:
+            if key in value and _is_status_field_name(value[key]):
+                return _status_value_from_change(value)
+
+        for key, nested_value in value.items():
+            if _is_status_field_name(key):
+                return _status_value_from_change(nested_value)
+
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        for item in value:
+            status = _extract_changed_status_value(item)
+            if status is not None:
+                return status
+
+    return None
+
+
+def _status_value_from_change(value: Any) -> str | None:
+    if isinstance(value, Mapping):
+        for key in _CHANGED_STATUS_VALUE_KEYS:
+            if key in value and value[key] is not None:
+                return _string_or_named_value(value[key])
+        return _string_or_named_value(value)
+
+    return _string_or_named_value(value)
 
 
 def _lookup_text(payload_maps: Sequence[Mapping[str, Any]], keys: Sequence[str]) -> str | None:
