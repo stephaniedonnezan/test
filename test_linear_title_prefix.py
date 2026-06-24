@@ -57,6 +57,19 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
 
         self.assertIsNone(build_issue_title_update(event))
 
+    def test_trigger_type_can_mark_status_change(self):
+        event = {
+            "triggerType": "status_changed",
+            "newStatus": "To Research",
+            "id": "POI-124",
+            "title": "Trigger type status change",
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event)["title"],
+            "Cursor researching: Trigger type status change",
+        )
+
     def test_ignores_non_status_triggers(self):
         event = {
             "trigger": "comment_created",

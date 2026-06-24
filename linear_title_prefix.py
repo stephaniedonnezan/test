@@ -75,7 +75,7 @@ def _is_status_change_event(contexts: Iterable[Mapping[str, Any]]) -> bool:
     event_names = [
         value
         for context in context_list
-        for key in ("trigger", "webhookType", "action", "type", "eventType")
+        for key in ("trigger", "triggerType", "webhookType", "action", "type", "eventType")
         for value in (context.get(key),)
         if value is not None
     ]
