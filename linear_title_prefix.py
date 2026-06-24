@@ -209,7 +209,7 @@ def _text_value(value: Any) -> str | None:
         stripped = value.strip()
         return stripped or None
     if isinstance(value, Mapping):
-        return _first_text(value for _ in range(1), ("name", "title", "displayName", "value"))
+        return _first_text((value,), ("name", "title", "displayName", "value"))
     return None
 
 
