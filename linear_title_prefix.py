@@ -80,7 +80,7 @@ def _is_status_change_event(event: Mapping[str, Any]) -> bool:
                 return True
 
         changed_fields = _extract_changed_fields(context)
-        if any(_normalize_identifier(field) in _STATUS_FIELD_NAMES for field in changed_fields):
+        if any(_is_status_field(field) for field in changed_fields):
             return True
 
     return False
@@ -172,6 +172,17 @@ def _extract_changed_fields(context: Mapping[str, Any]) -> list[str]:
             fields.extend(_extract_text(field) for field in value.keys())
 
     return [field for field in fields if field]
+
+
+def _is_status_field(field: str) -> bool:
+    normalized = _normalize_identifier(field)
+    if normalized in _STATUS_FIELD_NAMES:
+        return True
+
+    if normalized.endswith("id"):
+        return normalized[:-2] in _STATUS_FIELD_NAMES
+
+    return False
 
 
 def _extract_first_text(context: Mapping[str, Any], keys: Iterable[str]) -> str | None:
