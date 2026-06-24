@@ -45,6 +45,26 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_top_level_trigger_context_payload_is_supported(self):
+        event = {
+            "triggerContext": {
+                "trigger": "status_changed",
+                "webhookType": "issue",
+                "newStatus": "to research",
+                "id": "POI-4938",
+                "title": "Unable to retrieve the power allocation",
+            }
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-4938",
+                "title": "Cursor researching: Unable to retrieve the power allocation",
+            },
+        )
+
     def test_status_and_trigger_names_are_normalized(self):
         event = {
             "trigger": "statusChanged",
