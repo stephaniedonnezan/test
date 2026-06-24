@@ -150,6 +150,29 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             "Cursor researching: Changed state",
         )
 
+    def test_state_id_change_falls_back_to_issue_state_name(self):
+        event = {
+            "action": "update",
+            "data": {
+                "issue": {
+                    "identifier": "POI-12",
+                    "title": "Changed state id",
+                    "state": {"name": "To Research"},
+                },
+                "changes": {
+                    "stateId": {
+                        "oldValue": "old-state-id",
+                        "newValue": "new-state-id",
+                    }
+                },
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event)["title"],
+            "Cursor researching: Changed state id",
+        )
+
     def test_updated_from_old_status_is_not_treated_as_new_status(self):
         event = {
             "action": "update",

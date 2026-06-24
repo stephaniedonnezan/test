@@ -46,6 +46,14 @@ _STATUS_FIELD_NAMES = {
     "statusId",
     "stateId",
 }
+_STATUS_VALUE_FIELD_NAMES = {
+    "status",
+    "state",
+    "workflowstate",
+    "workflow_state",
+    "workflowStatus",
+    "workflow_status",
+}
 _CHANGE_CONTAINER_KEYS = (
     "updatedFields",
     "updated_fields",
@@ -212,7 +220,7 @@ def _new_status_from_change_container(value: Any) -> str | None:
         for key, item in value.items():
             if _is_status_field_name(key):
                 text = _new_value_text(item)
-                if text:
+                if text and _can_use_as_status_value(key, text):
                     return text
             if isinstance(item, (Mapping, list, tuple)):
                 text = _new_status_from_change_container(item)
@@ -225,7 +233,7 @@ def _new_status_from_change_container(value: Any) -> str | None:
                 field_name = _find_text_for_key(item, "name") or _find_text_for_key(item, "field")
                 if _is_status_field_name(field_name):
                     text = _new_value_text(item)
-                    if text:
+                    if text and _can_use_as_status_value(field_name, text):
                         return text
             text = _new_status_from_change_container(item)
             if text:
@@ -306,6 +314,14 @@ def _is_status_field_name(value: Any) -> bool:
         return False
     normalized = _normalize_marker(value)
     return normalized in {_normalize_marker(field) for field in _STATUS_FIELD_NAMES}
+
+
+def _can_use_as_status_value(field_name: Any, value: str) -> bool:
+    if not isinstance(field_name, str):
+        return False
+    normalized_field = _normalize_marker(field_name)
+    value_fields = {_normalize_marker(field) for field in _STATUS_VALUE_FIELD_NAMES}
+    return normalized_field in value_fields or _normalize_label(value) == _normalize_label(TARGET_STATUS)
 
 
 def _normalize_marker(value: Any) -> str:
