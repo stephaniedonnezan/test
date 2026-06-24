@@ -227,6 +227,9 @@ def _status_from_change_value(value: Any) -> str | None:
             status = _status_from_change_value(value.get(key))
             if status:
                 return status
+        status_name = _first_string([value], ("name", "title", "status"))
+        if status_name:
+            return status_name
         return _status_from_nested_status_object(value)
 
     return None
