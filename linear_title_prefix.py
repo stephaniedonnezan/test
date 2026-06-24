@@ -132,8 +132,16 @@ def _is_status_change(contexts: Sequence[Mapping[str, Any]]) -> bool:
     for context in contexts:
         trigger_values.extend(
             _flatten_text_values(
-                context.get(key)
-                for key in ("trigger", "webhookType", "webhook_type", "action", "type")
+                [
+                    context.get(key)
+                    for key in (
+                        "trigger",
+                        "webhookType",
+                        "webhook_type",
+                        "action",
+                        "type",
+                    )
+                ]
             )
         )
 
