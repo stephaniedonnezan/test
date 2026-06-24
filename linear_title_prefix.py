@@ -11,7 +11,18 @@ from typing import Any
 
 TITLE_PREFIX = "Cursor researching"
 TARGET_STATUS = "to research"
-STATUS_FIELDS = {"status", "state", "workflowstate", "workflow state", "stateid", "statusid"}
+STATUS_FIELDS = {
+    "status",
+    "state",
+    "workflowstate",
+    "workflow state",
+    "stateid",
+    "state id",
+    "statusid",
+    "status id",
+    "workflowstateid",
+    "workflow state id",
+}
 DIRECT_STATUS_CHANGE_EVENTS = {
     "status changed",
     "state changed",
