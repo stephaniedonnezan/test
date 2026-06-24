@@ -15,7 +15,17 @@ TARGET_STATUS = "to research"
 _CAMEL_CASE_BOUNDARY = re.compile(r"(?<=[a-z0-9])(?=[A-Z])")
 _NON_ALNUM = re.compile(r"[^a-z0-9]+")
 _STATUS_FIELD_NAMES = {"status", "state", "workflow state", "workflowstate"}
-_TRIGGER_KEYS = {"trigger", "webhookType", "action", "type", "eventType", "triggerType"}
+_TRIGGER_KEYS = {
+    "trigger",
+    "webhookType",
+    "webhook_type",
+    "action",
+    "type",
+    "eventType",
+    "event_type",
+    "triggerType",
+    "trigger_type",
+}
 
 
 def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
@@ -109,10 +119,16 @@ def _is_direct_status_trigger(value: str) -> bool:
     return value in {
         "status changed",
         "status change",
+        "status updated",
+        "status update",
         "state changed",
         "state change",
+        "state updated",
+        "state update",
         "workflow state changed",
         "workflow state change",
+        "workflow state updated",
+        "workflow state update",
     }
 
 
@@ -161,15 +177,79 @@ def _value_mentions_status_field(value: Any) -> bool:
 
 
 def _extract_status(contexts: list[Mapping[str, Any]]) -> str | None:
-    for key in ("newStatus", "new_status", "statusName", "stateName", "workflowStateName"):
+    for key in (
+        "newStatus",
+        "new_status",
+        "statusName",
+        "status_name",
+        "stateName",
+        "state_name",
+        "workflowStateName",
+        "workflow_state_name",
+    ):
         value = _first_text(contexts, (key,))
         if value:
             return value
+
+    changed_status = _extract_changed_status(contexts)
+    if changed_status:
+        return changed_status
 
     for key in ("status", "state", "workflowState", "workflow_state"):
         value = _first_text(contexts, (key,))
         if value:
             return value
+
+    return None
+
+
+def _extract_changed_status(contexts: list[Mapping[str, Any]]) -> str | None:
+    for context in contexts:
+        for key in ("changes", "updatedFields", "updated_fields", "changedFields", "changed_fields"):
+            changed_status = _changed_status_from_value(context.get(key))
+            if changed_status:
+                return changed_status
+    return None
+
+
+def _changed_status_from_value(value: Any) -> str | None:
+    if isinstance(value, Mapping):
+        for key, change in value.items():
+            if _normalize(str(key)) in _STATUS_FIELD_NAMES:
+                changed_status = _changed_value_text(change)
+                if changed_status:
+                    return changed_status
+        return None
+
+    if isinstance(value, Iterable) and not isinstance(value, str):
+        for item in value:
+            if not isinstance(item, Mapping):
+                continue
+
+            field_names = (item.get("name"), item.get("field"), item.get("key"))
+            if any(_normalize(str(name)) in _STATUS_FIELD_NAMES for name in field_names if name):
+                changed_status = _changed_value_text(item)
+                if changed_status:
+                    return changed_status
+
+    return None
+
+
+def _changed_value_text(value: Any) -> str | None:
+    if isinstance(value, str):
+        return value
+
+    if not isinstance(value, Mapping):
+        return None
+
+    for key in ("to", "after", "newValue", "new_value", "new", "current", "value"):
+        text = _text_value(value.get(key))
+        if text:
+            return text
+
+    name = value.get("name")
+    if isinstance(name, str) and _normalize(name) not in _STATUS_FIELD_NAMES:
+        return name
 
     return None
 

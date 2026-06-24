@@ -103,6 +103,27 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             },
         )
 
+    def test_accepts_changed_status_value_from_changes_object(self):
+        event = {
+            "action": "update",
+            "changes": {"workflowState": {"to": {"name": "To Research"}}},
+            "data": {
+                "issue": {
+                    "identifier": "POI-3977",
+                    "title": "Write backend tests",
+                }
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-3977",
+                "title": "Cursor researching: Write backend tests",
+            },
+        )
+
     def test_requires_status_field_for_generic_update_events(self):
         event = {
             "action": "update",
