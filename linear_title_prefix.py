@@ -48,8 +48,9 @@ def build_issue_title_update(event: Mapping[str, Any]) -> dict[str, str] | None:
     if _normalize_text(new_status) != TARGET_STATUS:
         return None
 
-    title = _extract_first_text(mappings, _TITLE_KEYS)
-    issue_id = _extract_first_text(mappings, _ISSUE_ID_KEYS)
+    issue_mappings = _collect_issue_mappings(event)
+    title = _extract_first_text(issue_mappings, _TITLE_KEYS)
+    issue_id = _extract_first_text(issue_mappings, _ISSUE_ID_KEYS)
     if not title or not issue_id:
         return None
 
@@ -76,6 +77,25 @@ def _collect_mappings(event: Mapping[str, Any]) -> list[Mapping[str, Any]]:
         ("issue",),
     ):
         value = _get_path(event, path)
+        if isinstance(value, Mapping) and value not in mappings:
+            mappings.append(value)
+    return mappings
+
+
+def _collect_issue_mappings(event: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    """Collect issue-bearing scopes before generic webhook metadata scopes."""
+
+    mappings: list[Mapping[str, Any]] = []
+    for path in (
+        ("automation_trigger_info", "triggerContext"),
+        ("triggerContext",),
+        ("data", "issue"),
+        ("issue",),
+        ("data",),
+        (),
+        ("automation_trigger_info",),
+    ):
+        value = event if not path else _get_path(event, path)
         if isinstance(value, Mapping) and value not in mappings:
             mappings.append(value)
     return mappings

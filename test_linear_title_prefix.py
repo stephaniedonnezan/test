@@ -106,6 +106,29 @@ class LinearTitlePrefixTests(unittest.TestCase):
             },
         )
 
+    def test_nested_issue_identifier_wins_over_webhook_delivery_id(self):
+        event = {
+            "id": "webhook-delivery-id",
+            "action": "update",
+            "updatedFields": ["state"],
+            "changes": {"state": {"to": "to research"}},
+            "data": {
+                "issue": {
+                    "identifier": "POI-999",
+                    "title": "Use issue identifier",
+                }
+            },
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event),
+            {
+                "action": "update_issue_title",
+                "issueId": "POI-999",
+                "title": "Cursor researching: Use issue identifier",
+            },
+        )
+
     def test_generic_issue_update_requires_status_field_change(self):
         event = {
             "action": "update",
