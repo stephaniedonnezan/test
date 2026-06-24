@@ -12,7 +12,9 @@ from typing import Any
 TITLE_PREFIX = "Cursor researching"
 TARGET_STATUS = "to research"
 TITLE_SEPARATOR = ": "
-STATUS_FIELD_NAMES = frozenset({"status", "state", "workflowstate", "workflow status"})
+STATUS_FIELD_NAMES = frozenset(
+    {"status", "state", "workflowstate", "workflow state", "workflow status"}
+)
 STATUS_TRIGGER_NAMES = frozenset(
     {
         "statuschanged",
@@ -102,6 +104,9 @@ def _is_status_change_event(
         return _updated_fields_include_status(event, payloads)
 
     # Cursor automations can provide only newStatus/status in triggerContext.
+    if event_names:
+        return False
+
     return _has_key_anywhere(payloads, ("newStatus", "new_status", "statusName", "status_name"))
 
 
