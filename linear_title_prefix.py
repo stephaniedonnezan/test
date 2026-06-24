@@ -135,7 +135,7 @@ def _is_status_change_event(context: Mapping[str, Any]) -> bool:
 
 
 def _updated_status_fields(context: Mapping[str, Any]) -> bool:
-    for key in ("updatedFields", "changedFields"):
+    for key in ("updatedFields", "updated_fields", "changedFields", "changed_fields"):
         if _contains_status_field(context.get(key)):
             return True
 
@@ -151,7 +151,10 @@ def _contains_status_field(value: Any) -> bool:
         return _is_status_field(value)
 
     if isinstance(value, Mapping):
-        return any(_is_status_field(key) for key in value.keys())
+        return any(
+            _is_status_field(key) or _contains_status_field(item)
+            for key, item in value.items()
+        )
 
     if isinstance(value, (list, tuple, set)):
         return any(_contains_status_field(item) for item in value)

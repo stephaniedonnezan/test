@@ -139,6 +139,24 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             result["title"], "Cursor researching: PoC of error handling pattern"
         )
 
+    def test_supports_snake_case_updated_field_objects(self):
+        event = {
+            "action": "update",
+            "updated_fields": [{"field": "workflowState"}],
+            "issue": {
+                "identifier": "POI-4079",
+                "title": "PoC of error handling pattern",
+                "workflowState": {"name": "To Research"},
+            },
+        }
+
+        result = build_issue_title_update(event)
+
+        self.assertIsNotNone(result)
+        self.assertEqual(
+            result["title"], "Cursor researching: PoC of error handling pattern"
+        )
+
     def test_trims_issue_id_and_title(self):
         event = {
             "trigger": "status_changed",
