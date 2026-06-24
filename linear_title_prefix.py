@@ -78,6 +78,10 @@ def _has_status_field_change(value: Any, *, inspect_keys: bool = False) -> bool:
         return _normalize_token(value) in _STATUS_FIELD_TOKENS
 
     if isinstance(value, Mapping):
+        for key in ("triggerContext", "data", "issue"):
+            if key in value and _has_status_field_change(value[key], inspect_keys=inspect_keys):
+                return True
+
         for key in (
             "updatedFields",
             "updated_fields",
