@@ -102,7 +102,7 @@ def _is_status_change_event(contexts: list[Mapping[str, Any]]) -> bool:
         _normalize_text(value)
         for context in contexts
         for key, value in context.items()
-        if _normalize_key(key) in {"trigger", "action", "type"}
+        if _normalize_key(key) in {"trigger", "action", "type", "webhook type", "webhooktype"}
         and isinstance(value, (str, int, float))
     ]
 
@@ -134,7 +134,7 @@ def _field_collection_mentions_status(value: Any) -> bool:
         if _normalize_key(value.get("name")) in _STATUS_FIELD_NAMES:
             return True
         return any(_normalize_key(key) in _STATUS_FIELD_NAMES for key in value)
-    if isinstance(value, list | tuple | set):
+    if isinstance(value, (list, tuple, set)):
         return any(_field_collection_mentions_status(item) for item in value)
     return False
 
@@ -189,7 +189,7 @@ def _status_from_updated_fields(fields: Any) -> Any:
         for key, value in fields.items():
             if _normalize_key(key) in _STATUS_FIELD_NAMES:
                 return _status_name(value)
-    if isinstance(fields, list | tuple | set):
+    if isinstance(fields, (list, tuple, set)):
         for item in fields:
             status = _status_from_updated_fields(item)
             if status is not None:

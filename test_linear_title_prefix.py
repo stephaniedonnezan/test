@@ -119,6 +119,19 @@ class BuildIssueTitleUpdateTest(unittest.TestCase):
             "Cursor researching: Changed status map",
         )
 
+    def test_webhook_type_can_carry_trigger_metadata(self):
+        event = {
+            "webhookType": "status_changed",
+            "newStatus": "to research",
+            "identifier": "POI-10",
+            "title": "Webhook type payload",
+        }
+
+        self.assertEqual(
+            build_issue_title_update(event)["title"],
+            "Cursor researching: Webhook type payload",
+        )
+
     def test_update_without_status_marker_is_ignored(self):
         event = {
             "action": "update",
