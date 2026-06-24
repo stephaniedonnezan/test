@@ -76,8 +76,6 @@ def _new_status(event: Mapping[str, Any]) -> str | None:
                 "status_name",
                 "newState",
                 "new_state",
-                "workflowState",
-                "workflow_state",
             ),
         )
         if value:
